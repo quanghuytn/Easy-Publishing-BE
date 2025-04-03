@@ -1,0 +1,316 @@
+﻿@{
+    ViewData["Title"] = "User Management";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="page-header">
+    <h4 class="page-title">User Management</h4>
+</div>
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex align-items-center">
+                    <button class="btn btn-primary btn-round ml-auto" data-toggle="modal" data-target="#addUserModal">
+                        <i class="fa fa-plus"></i>
+                        Add User
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table id="basic-datatables" class="display table table-striped table-head-bg-primary table-hover">
+                        <thead>
+                            <tr>
+                                <th>User Id</th>
+                                <th>Fullname</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Status</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add User Modal -->
+    <div class="modal" tabindex="-1" role="dialog" id="addUserModal">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New User</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="addUsername">Username</label>
+                        <input type="text" class="form-control" id="addUsername" placeholder="Fullname">
+                    </div>
+                    <div class="form-group">
+                        <label for="addEmail">Email</label>
+                        <input type="text" class="form-control" id="addEmail" placeholder="Email">
+                    </div>
+                    <div class="form-group">
+                        <label for="addPassword">Password</label>
+                        <input type="password" class="form-control" id="addPassword" placeholder="Password">
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmedPass">Confirmed Password</label>
+                        <input type="password" class="form-control" id="confirmedPass" placeholder="Phone">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="addUser()">Add User</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Detail Modal -->
+    <div class="modal" tabindex="-1" role="dialog" id="myModal">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">User Detail</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="userInfo">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary">Save changes</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Modal -->
+    <div class="modal" tabindex="-1" role="dialog" id="modalStatus">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" id="userStatus">
+            </div>
+        </div>
+    </div>
+
+
+</div>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        $('#nav-menu li').removeClass("active");
+        $('#nav-user').addClass("active");
+        loadData();
+    });
+
+    async function loadData() {
+        $('.loader-container').show();
+        $('#basic-datatables').DataTable().destroy();
+        fetch('http://localhost:5188/api/v1/Users/getAllUser')
+            .then(response => response.json())
+            .then(data => {
+                $('.loader-container').hide();
+                $('#basic-datatables').DataTable({
+                    data: data.dt,
+                    columns: [
+                        { data: 'userId' },
+                        { data: 'userFullName' },
+                        { data: 'email' },
+                        { data: 'phone' },
+                        {
+                            data: null,
+                            render(data) {
+                                if (data.status == 'Active') {
+                                    return `<a style="color: blue; cursor: pointer" onclick="adjustStatus('${data.status}', '${data.email}')">${data.status}</a>`
+                                } else {
+                                    return `<a style="color: red; cursor: pointer" onclick="adjustStatus('${data.status}', '${data.email}')">${data.status}</a>`
+                                }
+                            }
+                            //${data.status}
+                        },
+                        {
+                            data: null,
+                            render(data) {
+                                return `<a style="color: blue; cursor: pointer" onclick="openUserInfor(${data.userId})"><i class="fas fa-edit"></i></a>`
+                            }
+                        }
+                    ]
+                });
+            })
+            .catch(error => {
+                $('.loader-container').hide();
+                console.error('Error fetching data:', error);
+            });
+    }
+
+
+
+    //async function updateTable(data) {
+    //    var dataTable = $('#basic-datatables').DataTable();
+    //    dataTable.clear();
+
+    //    await data.dt.forEach(item => {
+    //        dataTable.row.add([
+    //            item.userId,
+    //            item.userFullName,
+    //            item.email,
+    //            item.phone,
+    //            item.address,
+    //            item.phone
+    //        ]).draw();
+    //    });
+    //}
+
+     function adjustStatus(status, email) {
+         if(status == 'Active'){
+            document.getElementById('userStatus').innerHTML = `
+                                        <div class="modal-header">
+                                <h2 class="modal-title">Do you want disable user ${email}?</h2>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+
+                        <div class="modal-footer">
+                                <button type="button" onclick="SwitchStatus('${email}')" class="btn btn-primary">Yes</button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+                        </div>
+                            `;
+         }else{
+            document.getElementById('userStatus').innerHTML = `
+                                            <div class="modal-header">
+                                    <h2 class="modal-title">Do you want enable user ${email}?</h2>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+
+                            <div class="modal-footer">
+                                        <button type="button" onclick="SwitchStatus('${email}')" class="btn btn-primary">Yes</button>
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+                            </div>
+                                `;
+         }
+
+        $("#modalStatus").modal();
+    }
+
+    async function SwitchStatus(email) {
+        try{
+            await fetch(`http://localhost:5188/api/v1/Users/SwitchStatus?email=${email}`, {
+                method: 'PUT',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            }).then(response => response.json())
+                .then(data => {
+                    var title = data.em;
+                    
+                    $.notify({
+                        title: title,
+                        icon: 'fa fa-bell'
+                    }, {
+                        type: data.ec == 0 ? 'success' : 'danger',
+                        placement: {
+                            from: "bottom",
+                            align: "right"
+                        },
+                        delay: 3000,
+                        template: '<div data-notify="container" class="col-xs-11 col-sm-3 alert alert-{0}" role="alert">' +
+                            '<button type="button" aria-hidden="true" class="close" data-notify="dismiss">×</button>' +
+                            '<span data-notify="icon"></span> ' +
+                            '<span data-notify="title">{1}</span> ' +
+                            '</div>'
+                    });
+                    loadData();
+
+                })
+                .catch(error => console.error('Unable to update item.', error));;
+            $("#modalStatus").modal('hide');
+
+        }catch(error){
+            console.error('Unable to update item.', error);
+        }
+
+    }
+
+    async function openUserInfor(userId) {
+        const response = await fetch(`http://localhost:5188/api/v1/Users/${userId}`);
+        if (response.ok) {
+            const user = await response.json();
+            console.log(user);
+            document.getElementById('userInfo').innerHTML = `
+                        <div class="form-group">
+                                            <label for="Fullname">Fullname</label>
+                                            <input type="text" class="form-control" id="Fullname" value="${user.userFullname}" placeholder="Fullname">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="email">Email</label>
+                                            <input type="text" class="form-control" id="email" value="${user.address}" placeholder="Email">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="password">Password</label>
+                                            <input type="password" class="form-control" id="password" value="${user.userFullname}" placeholder="Password">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="phone">Phone</label>
+                                            <input type="text" class="form-control" id="phone" value="${user.phone}" placeholder="Phone">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="address">Address</label>
+                                            <input type="text" class="form-control" id="address" value="${user.address}" placeholder="Address">
+                                        </div>
+                    `;
+        }
+        $("#myModal").modal();
+    }
+
+    async function addUser() {
+        const username = document.getElementById('addUsername').value;
+        const email = document.getElementById('addEmail').value;
+        const password = document.getElementById('addPassword').value;
+        const confirmedPass = document.getElementById('confirmedPass').value;
+
+        const newUser = {
+            Email: email,
+            Username: username,
+            Password: password,
+            ConfirmPassword: confirmedPass,
+        };
+
+        try {
+            const response = await fetch('http://localhost:5188/api/v1/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(newUser)
+            });
+
+            if (response.ok) {
+                $('#addUserModal').modal('hide');
+                loadData();
+            } else {
+                console.error('Failed to add user');
+            }
+        } catch (error) {
+            console.error('Error adding user:', error);
+        }
+    }
+
+
+
+
+</script>

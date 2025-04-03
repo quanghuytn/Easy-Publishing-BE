@@ -1,0 +1,497 @@
+﻿@{
+    ViewData["Title"] = "Report Management";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex align-items-center">
+                    <h4 class="card-title">Report Management</h4>
+
+                </div>
+            </div>
+            <div class="card-body">
+
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="basic-datatables" class="display table table-striped table-head-bg-primary table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Report Id</th>
+                                    <th>UserName</th>
+                                    <th>Report Type</th>
+                                    <th>Chapter</th>
+                                    <th>Story</th>
+                                    <th>Comment</th>
+                                    <th>Report Content</th>
+                                    <th>Report Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal" tabindex="-1" role="dialog" id="myModal">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Category Detail</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" id="categoryInfo">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal" tabindex="-1" role="dialog" id="modalStatus" >
+            <div class="modal-dialog" role="document">
+                <div class="modal-content" id="reportStatus">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal" tabindex="-2" role="dialog" id="banModal">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" id="banContent">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        loadData();
+    });
+
+    async function loadData() {
+        $('.loader-container').show();
+        $('#basic-datatables').DataTable().destroy();
+        fetch('http://localhost:5188/api/v1/reports/all_report')
+            .then(response => response.json())
+            .then(data => {
+                $('.loader-container').hide();
+                $('#basic-datatables').DataTable({
+                    data: data.dt,
+                    columns: [
+                        { data: 'reportId' },
+                        { data: 'userName' },
+                        { data: 'reportTypeContent' },
+                        { 
+                            data: null,
+                            render(data){
+                                if (data.chapterTitle && !data.commentContent) {
+                                    return `
+                                        <div style="display: flex; align-items: center;">
+                                            <a href="${data.link}" target="_blank">${data.chapterTitle}</a>
+                                                            <a style="cursor: pointer" class="text-danger ml-1" onclick="displayBanChapter(${data.chapterId}, '${data.chapterTitle}')"><i class="fas fa-ban"></i></a>
+                                        </div>`;
+                                }else{
+                                    return null;
+                                }
+                            }
+                        
+                        },
+                        { 
+                            data: null,
+                            render(data) {
+                                if (data.chapterTitle || data.commentContent) {
+                                    return null
+                                }else{
+                                    return `
+                                            <div style="display: flex; align-items: center;">
+                                                <a href="${data.link}" target="_blank">${data.storyTitle}</a>
+                                                            <a style="cursor: pointer" class="text-danger ml-1" onclick="displayBanStory(${data.storyId}, '${data.storyTitle}')"><i class="fas fa-ban"></i></a>
+                                            </div>`;
+                                }
+                            }
+                        },
+                        { 
+                            data: null,
+                            render(data) {
+                                if (data.commentContent) {
+                                    return `
+                                                    <div style="display: flex; align-items: center;">
+                                                                <p>${data.commentContent}</p>
+                                                                        <a style="cursor: pointer" class="text-danger ml-1" onclick="displayBanComment(${data.commentId})"><i class="fas fa-ban"></i></a>
+                                                    </div>`;
+                                } else {
+                                    return null;
+                                }
+                            }
+                        
+                        },
+                        { data: 'reportContent1' },
+                        { data: 'reportDate' },
+                        {
+                            data: null,
+                            render(data) {
+                                if (data.status == 'Unsolved') {
+                                    return `<a style="color: red; cursor: pointer" onclick="adjustStatus('${data.status}', '${data.reportId}')">${data.status}</a>`
+                                } else {
+                                    return `<a style="color: blue; cursor: pointer" onclick="adjustStatus('${data.status}', '${data.reportId}')">${data.status}</a>`
+                                }
+                            }
+                        }
+                    ]
+                });
+            })
+            .catch(error => {
+                $('.loader-container').hide();
+                console.error('Error fetching data:', error);
+            });
+    }
+
+    function displayBanComment(id) {
+        document.getElementById('banContent').innerHTML = `
+                                        <div class="modal-header">
+                                                <h2 class="modal-title">Xóa bình luận?</h2>
+                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                <span aria-hidden="true">&times;</span>
+                                            </button>
+                                        </div>
+
+                                        <div class="modal-footer">
+                                                <button type="button" onclick="deleteComment('${id}')" class="btn btn-primary">Xóa</button>
+                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
+                                        </div>
+                                `;
+        $("#banModal").modal();
+    }
+
+    async function deleteComment(id) {
+        try {
+            await fetch(`http://localhost:5188/api/v1/comments/delete_comment?commentId=${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            }).then(response => response.json())
+                .then(data => {
+                    var title = data.em;
+
+                    $.notify({
+                        title: title,
+                        icon: 'fa fa-bell'
+                    }, {
+                        type: data.ec == 0 ? 'success' : 'danger',
+                        placement: {
+                            from: "bottom",
+                            align: "right"
+                        },
+                        delay: 3000,
+                        template: '<div data-notify="container" class="col-xs-11 col-sm-3 alert alert-{0}" role="alert">' +
+                            '<button type="button" aria-hidden="true" class="close" data-notify="dismiss">×</button>' +
+                            '<span data-notify="icon"></span> ' +
+                            '<span data-notify="title">{1}</span> ' +
+                            '</div>'
+                    });
+
+                })
+                .catch(error => console.error('Xóa bình luận thất bại.', error));;
+            $("#banModal").modal('hide');
+
+        } catch (error) {
+            console.error('Xóa bình luận thất bại.', error);
+        }
+
+    }
+
+    function displayBanStory(id, title) {
+        document.getElementById('banContent').innerHTML = `
+                                    <div class="modal-header">
+                                            <h2 class="modal-title">Khóa truyện ${title}?</h2>
+                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+
+                                    <div class="modal-footer">
+                                            <button type="button" onclick="banStory('${id}')" class="btn btn-primary">Khóa</button>
+                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
+                                    </div>
+                            `;
+        $("#banModal").modal();
+    }
+
+    async function banStory(id) {
+        try {
+            await fetch(`http://localhost:5188/api/v1/story/delete_story?storyId=${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            }).then(response => response.json())
+                .then(data => {
+                    var title = data.em;
+                    if (data.ec == 0){
+                        title = "Khóa truyện thành công!";
+                    }
+                    $.notify({
+                        title: title,
+                        icon: 'fa fa-bell'
+                    }, {
+                        type: data.ec == 0 ? 'success' : 'danger',
+                        placement: {
+                            from: "bottom",
+                            align: "right"
+                        },
+                        delay: 3000,
+                        template: '<div data-notify="container" class="col-xs-11 col-sm-3 alert alert-{0}" role="alert">' +
+                            '<button type="button" aria-hidden="true" class="close" data-notify="dismiss">×</button>' +
+                            '<span data-notify="icon"></span> ' +
+                            '<span data-notify="title">{1}</span> ' +
+                            '</div>'
+                    });
+
+                })
+                .catch(error => console.error('Khóa truyện thất bại.', error));;
+            $("#banModal").modal('hide');
+
+        } catch (error) {
+            console.error('Khóa truyện thất bại.', error);
+        }
+
+    }
+
+    function displayBanChapter(id, title){
+        document.getElementById('banContent').innerHTML = `
+                                <div class="modal-header">
+                                        <h2 class="modal-title">Khóa chương ${title}?</h2>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+
+                                <div class="modal-footer">
+                                        <button type="button" onclick="banChapter('${id}')" class="btn btn-primary">Khóa</button>
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
+                                </div>
+                        `;
+        $("#banModal").modal();
+    }
+
+    async function banChapter(id) {
+        try {
+            await fetch(`http://localhost:5188/api/v1/chapters/delete_chapter?chapterId=${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            }).then(response => response.json())
+                .then(data => {
+                    var title = data.em;
+
+                    if (data.ec == 0) {
+                        title = "Khóa chương thành công!";
+                    }
+                    $.notify({
+                        title: title,
+                        icon: 'fa fa-bell'
+                    }, {
+                        type: data.ec == 0 ? 'success' : 'danger',
+                        placement: {
+                            from: "bottom",
+                            align: "right"
+                        },
+                        delay: 3000,
+                        template: '<div data-notify="container" class="col-xs-11 col-sm-3 alert alert-{0}" role="alert">' +
+                            '<button type="button" aria-hidden="true" class="close" data-notify="dismiss">×</button>' +
+                            '<span data-notify="icon"></span> ' +
+                            '<span data-notify="title">{1}</span> ' +
+                            '</div>'
+                    });
+
+                })
+                .catch(error => console.error('Khóa chương thất bại.', error));;
+            $("#banModal").modal('hide');
+
+        } catch (error) {
+            console.error('Khóa chương thất bại.', error);
+        }
+
+    }
+
+        function adjustStatus(status, id) {
+        if (status == 'Unsolved') {
+            document.getElementById('reportStatus').innerHTML = `
+                                            <div class="modal-header">
+                                    <h2 class="modal-title">Do you wanna mark report id ${id} as "Resolved"?</h2>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+
+                            <div class="modal-footer">
+                                    <button type="button" onclick="SwitchStatus('${id}')" class="btn btn-primary">Yes</button>
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+                            </div>
+                                `;
+        } else {
+            document.getElementById('reportStatus').innerHTML = `
+                                                <div class="modal-header">
+                                        <h2 class="modal-title">Do you wanna mark report id ${id} as "Unsolved"?</h2>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+
+                                <div class="modal-footer">
+                                            <button type="button" onclick="SwitchStatus(${id})" class="btn btn-primary">Yes</button>
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+                                </div>
+                                    `;
+        }
+
+        $("#modalStatus").modal();
+    }
+    async function SwitchStatus(id) {
+        try {
+            await fetch(`http://localhost:5188/api/v1/reports/resolveReport?id=${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            }).then(response => response.json())
+                .then(data => {
+                    var title = data.em;
+
+                    $.notify({
+                        title: title,
+                        icon: 'fa fa-bell'
+                    }, {
+                        type: 'success',
+                        placement: {
+                            from: "bottom",
+                            align: "right"
+                        },
+                        delay: 3000,
+                        template: '<div data-notify="container" class="col-xs-11 col-sm-3 alert alert-{0}" role="alert">' +
+                            '<button type="button" aria-hidden="true" class="close" data-notify="dismiss">×</button>' +
+                            '<span data-notify="icon"></span> ' +
+                            '<span data-notify="title">{1}</span> ' +
+                            '</div>'
+                    });
+                    loadData();
+
+                })
+                .catch(error => console.error('Unable to update item.', error));
+            $("#modalStatus").modal('hide');
+        } catch (error) {
+            console.error('Unable to update item.', error);
+        }
+
+    }
+
+    async function openReportInfor(reportId) {
+        const response = await fetch(`http://localhost:5188/api/v1/reports/report/${reportId}`);
+        if (response.ok) {
+            const report = await response.json();
+            console.log(report);
+            if (report.dt.commentContent != null) {
+                if (report.dt.chapterTitle != null) {
+                    document.getElementById('categoryInfo').innerHTML = `
+                        <div class="form-group">
+                            <label for="Fullname">Report Content</label>
+                             <label for="Fullname" class="form-control">${report.dt.reportContent1}</label>
+                        </div>
+                        <div class="form-group">
+                            <label for="Fullname">userName</label>
+                             <label for="Fullname" class="form-control">${report.dt.userName}</label>
+                        </div>
+                        <div class="form-group">
+                            <label for="Fullname">Report Type</label>
+                             <label for="Fullname" class="form-control">${report.dt.reportTypeContent}</label>
+                        </div>
+                        <div class="form-group">
+                            <label for="Fullname">storyTitle</label>
+                             <label for="Fullname" class="form-control">${report.dt.storyTitle}</label>
+                        </div>
+                         <div class="form-group">
+                             <label for="Fullname">chapterTitle</label>
+                              <label for="Fullname" class="form-control">${report.dt.chapterTitle}</label>
+                         </div>
+                          <div class="form-group">
+                              <label for="Fullname">commentContent</label>
+                               <label for="Fullname" class="form-control">${report.dt.commentContent}</label>
+                          </div>
+                        <div class="form-group">
+                            <label for="Fullname">Report Date</label>
+                             <label for="Fullname" class="form-control">${report.dt.reportDate}</label>
+                        </div>
+                        <div class="form-group">
+                            <label for="Fullname">status</label>
+                            <input type="text" class="form-control" id="status" value="${report.dt.status}" placeholder="Fullname">
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button"  class="btn btn-primary">Save changes</button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        </div> `;
+                }
+                else {
+                    document.getElementById('categoryInfo').innerHTML = `
+
+                            <div class="form-group">
+                                <label for="Fullname">Report Content</label>
+                                 <label for="Fullname" class="form-control">${report.dt.reportContent1}</label>
+                            </div>
+                            <div class="form-group">
+                                <label for="Fullname">user Name</label>
+                                 <label for="Fullname" class="form-control">${report.dt.userName}</label>
+                            </div>
+                            <div class="form-group">
+                                <label for="Fullname">Report Type</label>
+                                 <label for="Fullname" class="form-control">${report.dt.reportTypeContent}</label>
+                            </div>
+                            <div class="form-group">
+                                <label for="Fullname">story Title</label>
+                                 <label for="Fullname" class="form-control">${report.dt.storyTitle}</label>
+                            </div>
+                             <div class="form-group">
+                                 <label for="Fullname">comment Content</label>
+                                  <label for="Fullname" class="form-control">${report.dt.commentContent}</label>
+                             </div>
+                            <div class="form-group">
+                                <label for="Fullname">report Date</label>
+                                 <label for="Fullname" class="form-control">${report.dt.reportDate}</label>
+                            </div>
+                            <div class="form-group">
+                                <label for="Fullname">status</label>
+                                <input type="text" class="form-control" id="status" value="${report.dt.status}" placeholder="Fullname">
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button"  class="btn btn-primary">Save changes</button>
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            </div> `;
+                }
+            }
+
+
+        }
+        $("#myModal").modal();
+    }
+
+
+    function loadPage(pageName) {
+
+        // Use jQuery to load content from the server
+        $.get(`Pages/${pageName}.html`, function (data) {
+            // Replace the content of the #content div with the loaded data
+            $('#content').html(data);
+
+            $('#basic-datatables').DataTable();
+        });
+    }
+</script>
