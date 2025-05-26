@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using System.Text;
 using System.Text.Json.Serialization;
 using OfficeOpenXml;
+using app.Service.Caching;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
@@ -66,12 +68,26 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddControllersWithViews();
 
+var redisConfig = new ConfigurationOptions
+{
+    EndPoints = { builder.Configuration["Redis:EndPoint"] },
+    Password = builder.Configuration["Redis:Password"],
+    ConnectTimeout = 5000,
+    SyncTimeout = 5000,
+    AsyncTimeout = 5000
+};
+
 builder.Services.AddStackExchangeRedisCache(options =>
 {
-    options.Configuration = builder.Configuration["Redis:Configuration"];
+    options.ConfigurationOptions = redisConfig;
     options.InstanceName = builder.Configuration["Redis:InstanceName"];
 });
 
+builder.Services.AddSingleton<IConnectionMultiplexer>(provider =>
+    ConnectionMultiplexer.Connect(redisConfig));
+
+
+builder.Services.AddScoped<IRedisCacheService, RedisCacheService>();
 
 var app = builder.Build();
 

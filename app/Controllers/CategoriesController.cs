@@ -9,6 +9,8 @@ using app.Models;
 using NuGet.Common;
 using app.Service;
 using System.Drawing.Printing;
+using app.Service.Caching;
+using app.DTOs;
 
 namespace app.Controllers
 {
@@ -18,26 +20,36 @@ namespace app.Controllers
     {
         private readonly EasyPublishingContext _context;
         private MsgService _msgService = new MsgService();
-        public CategoriesController(EasyPublishingContext context)
+        private readonly IRedisCacheService _cache;
+        public CategoriesController(EasyPublishingContext context, IRedisCacheService cache)
         {
             _context = context;
+            _cache = cache;
         }
 
         // GET: api/Categories
         [HttpGet]
         public async Task<ActionResult> GetCategories()
         {
-            var cate = await _context.Categories
+            var cacheKey = "categories";
+            var cate = await _cache.StringGetAsync<IEnumerable<CategoryDTO>>(cacheKey);
+            if (cate is null)
+            {
+                cate = await _context.Categories
                 .Include(c => c.Stories)
-                .Select(c => new
+                .Select(c => new CategoryDTO
                 {
-                    c.CategoryId,
-                    c.CategoryName,
-                    categoryDescription = c.CategoryDescription.Substring(0,50)+"...",
-                    c.CategoryBanner,
+                    CategoryId = c.CategoryId,
+                    CategoryName = c.CategoryName,
+                    CategoryDescription = c.CategoryDescription.Substring(0, 50) + "...",
+                    CategoryBanner = c.CategoryBanner,
                     StoriesNumber = c.Stories.Count,
                 })
                 .ToListAsync();
+
+                _cache.StringSetAsync(cacheKey, cate);
+            }
+
             return _msgService.MsgReturn(0, "Các thể loại truyện", cate);
         }
 

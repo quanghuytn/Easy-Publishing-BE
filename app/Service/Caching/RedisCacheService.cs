@@ -1,39 +1,39 @@
 ﻿using Microsoft.Extensions.Caching.Distributed;
+using StackExchange.Redis;
 using System.Text.Json;
 
 namespace app.Service.Caching
 {
     public class RedisCacheService : IRedisCacheService
     {
-        private readonly IDistributedCache? _cache;
+        private readonly IConnectionMultiplexer? _connectionMultiplexer;
+        private readonly IDatabase _redisDb;
 
-        public RedisCacheService(IDistributedCache? cache)
+        public RedisCacheService(IConnectionMultiplexer connectionMultiplexer)
         {
-            _cache = cache;
+            _connectionMultiplexer = connectionMultiplexer;
+            _redisDb = connectionMultiplexer.GetDatabase();
         }
 
-        public async Task<T>? GetData<T>(string key)
+        public async Task<T>? StringGetAsync<T>(string key)
         {
-            var data = await _cache?.GetStringAsync(key);
-
-            if(data is null)
+            try
             {
+                var data = await _redisDb.StringGetAsync(key);
+              
+                return data.HasValue ? JsonSerializer.Deserialize<T>(data) : default;
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine($"Error getData: {ex.Message}");
                 return default;
             }
-
-            return JsonSerializer.Deserialize<T>(data);
-
         }
 
 
-        public async void SetData<T>(string key, T data)
+        public async void StringSetAsync<T>(string key, T data, TimeSpan? expiration = null)
         {
-            var options = new DistributedCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
-            };
-
-            await _cache?.SetStringAsync(key, JsonSerializer.Serialize(data), options);
+            await _redisDb?.StringSetAsync(key, JsonSerializer.Serialize(data), expiration);
         }
     }
 }

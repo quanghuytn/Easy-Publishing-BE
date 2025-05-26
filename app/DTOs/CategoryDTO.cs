@@ -3,10 +3,12 @@ using System.Collections.Generic;
 
 namespace app.DTOs;
 
-public partial class CategoryDTO
+public class CategoryDTO
 {
     public int CategoryId { get; set; }
-
-    public string? CategoryName { get; set; }
+    public string CategoryName { get; set; }
+    public string CategoryDescription { get; set; }
+    public string CategoryBanner { get; set; }
+    public int StoriesNumber { get; set; }
 
 }
