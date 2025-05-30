@@ -12,6 +12,9 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Drawing.Printing;
 using Microsoft.VisualBasic;
 using static app.Controllers.StoriesController;
+using Humanizer;
+using app.Service.Caching;
+using app.DTOs;
 
 namespace app.Controllers
 {
@@ -21,10 +24,12 @@ namespace app.Controllers
     {
         private readonly EasyPublishingContext _context;
         private MsgService _msgService = new MsgService();
+        private readonly IRedisCacheService _cache;
 
-        public StoriesController(EasyPublishingContext context)
+        public StoriesController(EasyPublishingContext context, IRedisCacheService cache)
         {
             _context = context;
+            _cache = cache;
         }
 
         private JwtSecurityToken VerifyToken()
@@ -253,6 +258,33 @@ namespace app.Controllers
                 };
 
             return _msgService.MsgReturn(0, "Trường tìm kiếm", new { author, cate, to, from, status });
+        }
+        [HttpGet("test")]
+        public async Task<ActionResult> Test()
+        {
+            var stories = await _context.Stories
+            .Include(s => s.Author)
+            .Include(s => s.Categories)
+                .Include(s => s.StoryInteraction)
+                .Select(s => new
+                {
+                    StoryId = s.StoryId,
+                    StoryTitle = s.StoryTitle,
+                    StoryImage = s.StoryImage,
+                    StoryDescription = s.StoryDescription.Substring(0, 100) + "...",
+                    StoryCategories = s.Categories.Select(c => new { CategoryId = c.CategoryId.ToString(), c.CategoryName }).ToList(),
+                    StoryAuthor = new { s.Author.UserId, s.Author.UserFullname },
+                    StoryCreateTime = s.CreateTime,
+                    StoryPrice = s.StoryPrice,
+                    Status = s.Status,
+
+                })
+                .ToListAsync();
+            foreach(var story in stories)
+            {
+                await _cache.AddStoryAsync(story.StoryId, story);
+            }
+            return _msgService.MsgReturn(0, "Kết quả tìm kiếm", stories);
         }
 
         [HttpGet("search_global")]

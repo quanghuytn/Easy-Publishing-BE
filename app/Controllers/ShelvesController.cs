@@ -34,8 +34,8 @@ namespace app.Controllers
             var stories = await _context.Stories.Where(c => c.Status > 0)
                 .Include(c => c.Author)
                 .Include(c => c.Categories)
-                .Include(c => c.Users) // luot mua truyen
-                .Include(c => c.Chapters).ThenInclude(c => c.Users) // luot mua chuong
+                .Include(c => c.Users) 
+                .Include(c => c.Chapters).ThenInclude(c => c.Users) 
                 .Include(c => c.StoryInteraction)
                 .Select(s => new
                 {
