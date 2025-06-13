@@ -1,5 +1,6 @@
 ﻿using app.Models;
 using app.Service;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.VisualBasic;
 using System.Drawing.Printing;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Xml.Linq;
 
 namespace app.Controllers
@@ -21,27 +23,6 @@ namespace app.Controllers
         public ChaptersController(EasyPublishingContext context)
         {
             _context = context;
-        }
-
-
-        private JwtSecurityToken VerifyToken()
-        {
-            var tokenCookie = Request.Cookies["access_token"];
-            var tokenBearer = extractToken();
-            var handler = new JwtSecurityTokenHandler();
-            var jwtSecurityToken = handler.ReadJwtToken(!String.IsNullOrEmpty(tokenBearer) ? tokenBearer : tokenCookie);
-            return jwtSecurityToken;
-        }
-
-        private string extractToken()
-        {
-            if (!String.IsNullOrEmpty(Request.Headers.Authorization) &&
-                Request.Headers.Authorization.ToString().Split(' ')[0] == "Bearer" &&
-                !String.IsNullOrEmpty(Request.Headers.Authorization.ToString().Split(' ')[1]))
-            {
-                return Request.Headers.Authorization.ToString().Split(' ')[1];
-            }
-            return null;
         }
 
         [HttpGet("story_detail")]
@@ -278,17 +259,11 @@ namespace app.Controllers
             });
         }
 
+        [Authorize]
         [HttpGet("chapter_information")]
         public async Task<ActionResult> GetChapterInfor(int chapterId)
         {
-            var jwtSecurityToken = new JwtSecurityToken();
-            int userId = 0;
-            try
-            {
-                jwtSecurityToken = VerifyToken();
-                userId = Int32.Parse(jwtSecurityToken.Claims.First(c => c.Type == "userId").Value);
-            }
-            catch (Exception) { }
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
             var user = _context.Users.Include(u => u.Chapters).Include(u => u.Stories).FirstOrDefault(u => u.UserId == userId);
 
             var chapter = _context.Chapters.Where(c => c.ChapterId == chapterId).Select(c => new
@@ -310,14 +285,6 @@ namespace app.Controllers
                 {
                     EC = -1,
                     EM = "Chương không tồn tại"
-                });
-            }
-            if (user == null)
-            {
-                return new JsonResult(new
-                {
-                    EC = -1,
-                    EM = "Bạn phải đăng nhập trước"
                 });
             }
             if (!user.Stories.Any(s => s.StoryId == chapter.storyId))
@@ -479,14 +446,7 @@ namespace app.Controllers
         [HttpGet("chapter_content/{storyid}/{chapterNumber}")]
         public async Task<ActionResult> GetChapterContent(long chapterNumber, int storyid)
         {
-            var jwtSecurityToken = new JwtSecurityToken();
-            int userId = 0;
-            try
-            {
-                jwtSecurityToken = VerifyToken();
-                userId = Int32.Parse(jwtSecurityToken.Claims.First(c => c.Type == "userId").Value);
-            }
-            catch (Exception) { }
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
 
             long nextChapterNum = NextChapter(chapterNumber, storyid);
             long prevChapterNum = PreviousChapter(chapterNumber, storyid);

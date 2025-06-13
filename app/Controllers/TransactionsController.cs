@@ -2,10 +2,12 @@ using app.Models;
 using app.Service;
 using app.Service.MomoService;
 using app.Service.VNPayService;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace app.Controllers
 {
@@ -64,22 +66,6 @@ namespace app.Controllers
                 return Request.Headers.Authorization.ToString().Split(' ')[1];
             }
             return null;
-        }
-
-        private int GetUserId()
-        {
-            var jwtSecurityToken = new JwtSecurityToken();
-            int userId = 0;
-            try
-            {
-                jwtSecurityToken = VerifyToken();
-                userId = Int32.Parse(jwtSecurityToken.Claims.First(c => c.Type == "userId").Value);
-            }
-            catch (Exception)
-            {
-
-            }
-            return userId;
         }
 
         [HttpGet("getTodayRevenue")]
@@ -162,13 +148,13 @@ namespace app.Controllers
                 .Sum(t => t.Amount) * 1000;
         }
 
+        [Authorize]
         [HttpGet("wallet")]
         public async Task<ActionResult> GetUserWallet()
         {
             try
             {
-                int userId = GetUserId();
-                if (userId == 0) return _msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
+                int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
                 var wallet = await _context.Wallets.Where(w => w.UserId == userId)
                     .Include(w => w.Transactions)
                     .Select(w => new
@@ -195,13 +181,13 @@ namespace app.Controllers
             }
         }
 
+        [Authorize]
         [HttpPost("purchase_story")]
         public async Task<ActionResult> AddTransactionBuyStory(int storyId)
         {
             try
             {
-                int userId = GetUserId();
-                if (userId == 0) return _msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
+                int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
                 var user = await _context.Users.Where(u => u.UserId == userId).FirstOrDefaultAsync();
                 var story = await _context.Stories.Where(s => s.StoryId == storyId).FirstOrDefaultAsync();
                 var user_wallet = await _context.Wallets.Where(w => w.UserId == userId).FirstOrDefaultAsync();
@@ -295,13 +281,13 @@ namespace app.Controllers
             }
         }
 
+        [Authorize]
         [HttpPost("purchase_chapter")]
         public async Task<ActionResult> AddTransactionBuyChapter(int chapterId)
         {
             try
             {
-                int userId = GetUserId();
-                if (userId == 0) return _msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
+                int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
                 var user = await _context.Users.Where(u => u.UserId == userId).FirstOrDefaultAsync();
                 var chapter = await _context.Chapters.Where(ch => ch.ChapterId == chapterId).FirstOrDefaultAsync();
                 var story = await _context.Stories.Where(s => s.StoryId == chapter.StoryId).FirstOrDefaultAsync();
@@ -379,7 +365,7 @@ namespace app.Controllers
         {
             try
             {
-                int userId = GetUserId();
+                int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
                 if (userId == 0) return _msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
                 var user = await _context.Users.Where(u => u.UserId == userId).FirstOrDefaultAsync();
                 if (chapterStart > chapterEnd)
@@ -489,7 +475,7 @@ namespace app.Controllers
         {
             try
             {
-                int userId = GetUserId();
+                int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
                 if (userId == 0) return _msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
                 var user_chapter = await _context.Users.Where(u => u.UserId == userId)
                      .Include(u => u.Chapters)
@@ -515,13 +501,13 @@ namespace app.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet("get_transaction_buy_many_chapters")]
         public async Task<ActionResult> GetTransactionBuyManyChapters(int chapterStart, int chapterEnd, int storyId)
         {
             try
             {
-                int userId = GetUserId();
-                if (userId == 0) return _msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
+                int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
                 if (chapterStart > chapterEnd)
                     return _msgService.MsgActionReturn(-3, "Chương bắt đầu cần lớn hơn chương cuối bạn muốn mua");
 
@@ -561,13 +547,13 @@ namespace app.Controllers
             }
         }
 
+        [Authorize]
         [HttpPost("top_up")]
         public async Task<ActionResult> AddTransactionTopUp(int amount)
         {
             try
             {
-                int userId = GetUserId();
-                if (userId == 0) return _msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
+                int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
                 var user = await _context.Users.Where(u => u.UserId == userId).FirstOrDefaultAsync();
                 var user_wallet = await _context.Wallets.Where(w => w.UserId == user.UserId).FirstOrDefaultAsync();
                 var user_transaction = new Transaction
@@ -617,13 +603,13 @@ namespace app.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet("history")]
         public async Task<ActionResult> GetUserTransactionHistory(int page, int pageSize)
         {
             try
             {
-                int userId = GetUserId();
-                if (userId == 0) return _msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
+                int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
                 var transactions = await _context.Transactions
                 .Where(c => c.Wallet.UserId == userId)
                 .Include(t => t.Wallet)
@@ -660,13 +646,13 @@ namespace app.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet("user_story_transaction_history")]
         public async Task<ActionResult> GetUserStoryTransactionHistory(int page, int pageSize, int storyId)
         {
             try
             {
-                int userId = GetUserId();
-                if (userId == 0) return _msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
+                int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
                 var transactions = await _context.Transactions
                 .Where(c => c.Wallet.UserId == userId && c.StoryId == storyId)
                  .Include(t => t.Story)
@@ -700,13 +686,14 @@ namespace app.Controllers
                 });
             }
         }
+
+        [Authorize]
         [HttpGet("get_transaction_top_up")]
         public async Task<ActionResult> GetTransactionTopUp(int page, int pageSize)
         {
             try
             {
-                int userId = GetUserId();
-                if (userId == 0) return _msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
+                int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
                 var transactions = await _context.Transactions
                 .Where(c => c.Wallet.UserId == userId && c.Description.StartsWith("Nạp"))
                  .Include(t => t.Story)
@@ -741,13 +728,13 @@ namespace app.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet("get_buy_transaction")]
         public async Task<ActionResult> GetBuyTransaction(int page, int pageSize)
         {
             try
             {
-                int userId = GetUserId();
-                if (userId == 0) return _msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
+                int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
                 var transactions = await _context.Transactions
                 .Where(c => c.Wallet.UserId == userId && c.Description.StartsWith("Mua"))
                 .Include(t => t.Story)
@@ -782,11 +769,11 @@ namespace app.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet("admin_history")]
         public async Task<ActionResult> GetAdminTransactionHistory()
         {
-            int userId = GetUserId();
-            if (userId == 0) return _msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
             var admin = _context.Users.Where(u => u.UserId == userId).FirstOrDefault();
             if (admin.RoleId != 1) return _msgService.MsgActionReturn(-1, "Không có quyền quản trị viên");

@@ -1,13 +1,16 @@
 ﻿using app.Models;
 using app.Service;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Drawing.Printing;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace app.Controllers
 {
+    [Authorize]
     [Route("api/v1/interaction")]
     [ApiController]
     public class InteractionsController : ControllerBase
@@ -19,44 +22,11 @@ namespace app.Controllers
         {
             _context = context;
         }
-        private JwtSecurityToken VerifyToken()
-        {
-            var tokenCookie = Request.Cookies["access_token"];
-            var tokenBearer = extractToken();
-            var handler = new JwtSecurityTokenHandler();
-            var jwtSecurityToken = handler.ReadJwtToken(!String.IsNullOrEmpty(tokenBearer) ? tokenBearer : tokenCookie);
-            return jwtSecurityToken;
-        }
-
-        private string extractToken()
-        {
-            if (!String.IsNullOrEmpty(Request.Headers.Authorization) &&
-                Request.Headers.Authorization.ToString().Split(' ')[0] == "Bearer" &&
-                !String.IsNullOrEmpty(Request.Headers.Authorization.ToString().Split(' ')[1]))
-            {
-                return Request.Headers.Authorization.ToString().Split(' ')[1];
-            }
-            return null;
-        }
-        private int GetUserId()
-        {
-            var jwtSecurityToken = new JwtSecurityToken();
-            int userId = 0;
-            try
-            {
-                jwtSecurityToken = VerifyToken();
-                userId = Int32.Parse(jwtSecurityToken.Claims.First(c => c.Type == "userId").Value);
-            }
-            catch (Exception) { }
-            return userId;
-        }
 
         [HttpPut("story_like")]
         public async Task<ActionResult> LikeStory(int storyId)
         {
-            int userId = GetUserId();
-
-            if (userId == 0) return _msgService.MsgActionReturn(-1, "Đăng nhập trước");
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
             var interaction = await _context.StoryFollowLikes.FirstOrDefaultAsync(c => c.StoryId == storyId && c.UserId == userId);
             var story_interaction = await _context.StoryInteractions.FirstOrDefaultAsync(c => c.StoryId == storyId);
@@ -93,13 +63,10 @@ namespace app.Controllers
             return _msgService.MsgActionReturn(0, "Bạn đã thích truyện");
         }
 
-
         [HttpPut("story_follow")]
         public async Task<ActionResult> FollowStory(int storyId)
         {
-            int userId = GetUserId();
-
-            if (userId == 0) return _msgService.MsgActionReturn(-1, "Đăng nhập trước");
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
             var interaction = await _context.StoryFollowLikes.FirstOrDefaultAsync(c => c.StoryId == storyId && c.UserId == userId);
             var story_interaction = await _context.StoryInteractions.FirstOrDefaultAsync(c => c.StoryId == storyId);
@@ -137,9 +104,8 @@ namespace app.Controllers
         [HttpPut("chapter_like")]
         public async Task<ActionResult> LikeChapter(int storyId, int chapterNum)
         {
-            int userId = GetUserId();
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
-            if (userId == 0) return _msgService.MsgActionReturn(-1, "Đăng nhập trước");
             var chapter = await _context.Chapters.FirstOrDefaultAsync(c => c.StoryId == storyId && c.ChapterNumber == chapterNum);
             var interaction = await _context.ChapterLikeds.FirstOrDefaultAsync(c => c.ChapterId == chapter.ChapterId && c.UserId == userId);
             var story_interaction = await _context.StoryInteractions.FirstOrDefaultAsync(c => c.StoryId == storyId);
@@ -174,6 +140,7 @@ namespace app.Controllers
             return _msgService.MsgActionReturn(0, msg);
         }
 
+        [AllowAnonymous]
         [HttpGet("author_manage/story")]
         public async Task<ActionResult> GetStoryData(int storyId)
         {
@@ -202,6 +169,7 @@ namespace app.Controllers
             return _msgService.MsgReturn(0, "Truyện của tác giả", interaction.FirstOrDefault());
         }
 
+        [AllowAnonymous]
         [HttpGet("author_manage/chapter")]
         public async Task<ActionResult> GetStoryChaptersData(int storyId, int from, int to)
         {

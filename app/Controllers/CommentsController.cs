@@ -1,15 +1,18 @@
 ﻿using app.DTOs;
 using app.Models;
 using app.Service;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.CodeAnalysis.Elfie.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualBasic;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace app.Controllers
 {
+    [Authorize]
     [Route("api/v1/comments")]
     [ApiController]
     public class CommentsController : ControllerBase
@@ -22,43 +25,11 @@ namespace app.Controllers
             _context = context;
         }
 
-        private JwtSecurityToken VerifyToken()
-        {
-            var tokenCookie = Request.Cookies["access_token"];
-            var tokenBearer = extractToken();
-            var handler = new JwtSecurityTokenHandler();
-            var jwtSecurityToken = handler.ReadJwtToken(!String.IsNullOrEmpty(tokenBearer) ? tokenBearer : tokenCookie);
-            return jwtSecurityToken;
-        }
-
-        private string extractToken()
-        {
-            if (!String.IsNullOrEmpty(Request.Headers.Authorization) &&
-                Request.Headers.Authorization.ToString().Split(' ')[0] == "Bearer" &&
-                !String.IsNullOrEmpty(Request.Headers.Authorization.ToString().Split(' ')[1]))
-            {
-                return Request.Headers.Authorization.ToString().Split(' ')[1];
-            }
-            return null;
-        }
-
-        private int GetUserId()
-        {
-            var jwtSecurityToken = new JwtSecurityToken();
-            int userId = 0;
-            try
-            {
-                jwtSecurityToken = VerifyToken();
-                userId = Int32.Parse(jwtSecurityToken.Claims.First(c => c.Type == "userId").Value);
-            }
-            catch (Exception) { }
-            return userId;
-        }
-
+        [AllowAnonymous]
         [HttpGet("story_detail")]
         public async Task<ActionResult> GetStoryComments(int storyId, int page, int pageSize)
         {
-            int userId = GetUserId();
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
 
             var comments = await _context.Comments.Where(c => c.StoryId == storyId)
                 .Include(c => c.User)
@@ -77,10 +48,11 @@ namespace app.Controllers
                 comments.Skip(pageSize * (page - 1)).Take(pageSize), page, pageSize, comments.Count);
         }
 
+        [AllowAnonymous]
         [HttpGet("chapter_content")]
         public async Task<ActionResult> GetChapterComments(int chapterId, int page, int pageSize)
         {
-            int userId = GetUserId();
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
 
             var comments = await _context.Comments.Where(c => c.StoryId == chapterId)
                 .Include(c => c.User)
@@ -103,9 +75,7 @@ namespace app.Controllers
         [HttpPost("send")]
         public async Task<ActionResult> SendComment(CommentDTO commentDTO)
         {
-            int userId = GetUserId();
-
-            if (userId == 0) return _msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
             if (!ModelState.IsValid) return _msgService.MsgActionReturn(-1, "Thiếu điều kiện");
             try
@@ -140,9 +110,7 @@ namespace app.Controllers
         [HttpPost("edit")]
         public async Task<ActionResult> EditComment(int commentId, [FromBody] CommentUpdateModel cmtUpdate)
         {
-            int userId = GetUserId();
-
-            if (userId == 0) return _msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
             Comment cmt = await _context.Comments.FirstOrDefaultAsync(c => c.UserId == userId && c.CommentId == commentId);
             if (cmt == null) return _msgService.MsgActionReturn(-1, "Comment không tồn tại");
@@ -173,9 +141,7 @@ namespace app.Controllers
         [HttpDelete("delete_comment")]
         public async Task<ActionResult> DeleteComment(int commentId)
         {
-            int userId = GetUserId();
-
-            if (userId == 0) return _msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
             var user = _context.Users.FirstOrDefault(u => u.UserId == userId);
 
             if(user.RoleId != 1)

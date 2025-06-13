@@ -11,6 +11,7 @@ using app.Service;
 using System.Drawing.Printing;
 using app.Service.Caching;
 using app.DTOs;
+using Microsoft.AspNetCore.Authorization;
 
 namespace app.Controllers
 {

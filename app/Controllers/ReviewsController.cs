@@ -1,12 +1,15 @@
 ﻿using app.Models;
 using app.Service;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace app.Controllers
 {
+    [Authorize]
     [Route("api/v1/reviews")]
     [ApiController]
     public class ReviewsController : ControllerBase
@@ -74,27 +77,12 @@ namespace app.Controllers
             return userId;
         }
 
+        [Authorize(Roles = "Reviewer")]
         [HttpPost("send")]
         public async Task<ActionResult> SendReview([FromBody] ReviewForm data)
         {
-            int userId = GetUserId();
-            if (userId == 0)
-            {
-                return new JsonResult(new
-                {
-                    EC = -1,
-                    EM = "Yêu cầu đăng nhập"
-                });
-            };
-            var user = _context.Users.Where(u => u.UserId == userId).FirstOrDefault();
-            if (user.RoleId == 2)
-            {
-                return new JsonResult(new
-                {
-                    EC = 1,
-                    EM = "Không có quyền Reviewer"
-                });
-            }
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
             var chapter = _context.Chapters.Where(c => c.ChapterId == data.ChapterId).FirstOrDefault();
             if (chapter == null)
             {
@@ -220,16 +208,8 @@ namespace app.Controllers
         [HttpGet("review_detail")]
         public async Task<ActionResult> getReviewDetail(int chapterId)
         {
-            int userId = GetUserId();
-            if (userId == 0)
-            {
-                return new JsonResult(new
-                {
-                    EC = -1,
-                    EM = "Yêu cầu đăng nhập"
-                });
-            };
-            var user = _context.Users.Where(u => u.UserId == userId).FirstOrDefault();
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
             var chapter = _context.Chapters.Where(c => c.ChapterId == chapterId).FirstOrDefault();
             if (chapter == null)
             {
@@ -318,16 +298,7 @@ namespace app.Controllers
         [HttpGet("chapter_review_author")]
         public async Task<ActionResult> GetChapterNotReviewOfAuthor(int page, int pageSize)
         {
-            var jwtSecurityToken = new JwtSecurityToken();
-            int userId = 0;
-            try
-            {
-                jwtSecurityToken = VerifyToken();
-                userId = Int32.Parse(jwtSecurityToken.Claims.First(c => c.Type == "userId").Value);
-            }
-            catch (Exception) { }
-
-            if (userId == 0) return msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
             var chapters = await _context.Chapters.Where(c => (c.Status == 0 || c.Status == null) && c.Story.AuthorId == userId)
                 .Select(c => new
@@ -351,19 +322,11 @@ namespace app.Controllers
             chapters.Skip(pageSize * (page - 1)).Take(pageSize), page, pageSize, chapters.Count);
         }
 
+        [Authorize(Roles ="Reviewer")]
         [HttpGet("chapter_review")]
         public async Task<ActionResult> GetChapterNotReview(int page, int pageSize)
         {
-            int userId = GetUserId();
-            if (userId == 0)
-            {
-                return msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
-            }
-            var user = _context.Users.Where(u => u.UserId == userId).FirstOrDefault();
-            if (user.RoleId == 2)
-            {
-                return msgService.MsgActionReturn(1, "Không có quyền Reviewer");
-            }
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
             var chapters = await _context.Chapters.Where(c => c.Status == 0 && c.Story.AuthorId != userId)
                 .Select(c => new
@@ -387,19 +350,12 @@ namespace app.Controllers
             chapters.Skip(pageSize * (page - 1)).Take(pageSize), page, pageSize, chapters.Count);
         }
 
+        [Authorize(Roles= "Reviewer")]
         [HttpGet("story_list")]
         public async Task<ActionResult> GetStoriesReview(int page, int pageSize)
         {
-            int userId = GetUserId();
-            if (userId == 0)
-            {
-                return msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
-            }
-            var user = _context.Users.Where(u => u.UserId == userId).FirstOrDefault();
-            if (user.RoleId == 2)
-            {
-                return msgService.MsgActionReturn(1, "Không có quyền Reviewer");
-            }
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
             var stories = await _context.Stories
                 .Include(s => s.Categories)
                 .Include(s => s.Users)
@@ -430,19 +386,12 @@ namespace app.Controllers
                 stories.Skip(pageSize * (page - 1)).Take(pageSize), page, pageSize, stories.Count);
         }
 
+        [Authorize(Roles ="Reviewer")]
         [HttpGet("volume_list")]
         public async Task<ActionResult> GetVolume(int storyid)
         {
-            int userId = GetUserId();
-            if (userId == 0)
-            {
-                return msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
-            }
-            var user = _context.Users.Where(u => u.UserId == userId).FirstOrDefault();
-            if (user.RoleId == 2)
-            {
-                return msgService.MsgActionReturn(1, "Không có quyền Reviewer");
-            }
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
             var volumes = await _context.Volumes
                 .Include(v => v.Chapters)
                 .Include(v => v.Story)
@@ -472,20 +421,10 @@ namespace app.Controllers
             return msgService.MsgReturn(0, "Danh sách các tập của truyện", volumes);
         }
 
+        [Authorize(Roles ="Reviewer")]
         [HttpGet("chapter_information")]
         public async Task<ActionResult> GetChapterInfor(int chapterId)
         {
-            int userId = GetUserId();
-            if (userId == 0)
-            {
-                return msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
-            }
-            var user = _context.Users.Include(u => u.Chapters).Include(u => u.Stories).FirstOrDefault(u => u.UserId == userId);
-            if (user.RoleId == 2)
-            {
-                return msgService.MsgActionReturn(1, "Không có quyền Reviewer");
-            }
-
             var chapter = _context.Chapters.Where(c => c.ChapterId == chapterId).Select(c => new
             {
                 chapterId = c.ChapterId,
@@ -511,19 +450,11 @@ namespace app.Controllers
             return msgService.MsgReturn(0, "Thông tin chương", chapter);
         }
 
+        [Authorize(Roles = "Reviewer")]
         [HttpGet("story_admin")]
         public async Task<ActionResult> GetStoriesAdmin()
         {
-            int userId = GetUserId();
-            if (userId == 0)
-            {
-                return msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
-            }
-            var user = _context.Users.Where(u => u.UserId == userId).FirstOrDefault();
-            if (user.RoleId == 2)
-            {
-                return msgService.MsgActionReturn(1, "Không có quyền Reviewer");
-            }
+            
             var stories = await _context.Stories
                 .Include(s => s.Author)
                 .Include(s => s.Volumes).ThenInclude(v => v.Chapters)

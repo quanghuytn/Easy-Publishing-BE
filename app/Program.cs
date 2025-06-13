@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using app.Models;
 using Microsoft.AspNetCore.OData;
@@ -8,6 +8,9 @@ using System.Text.Json.Serialization;
 using OfficeOpenXml;
 using app.Service.Caching;
 using StackExchange.Redis;
+using System.Text.Json;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
@@ -64,6 +67,48 @@ builder.Services.AddAuthentication(options =>
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true
     };
+    
+    options.Events = new JwtBearerEvents
+    {
+        OnAuthenticationFailed = context =>
+        {
+            var result = new JsonResult(new
+            {
+                EC = -1,
+                EM = "Yêu cầu đăng nhập",
+            })
+            {
+                StatusCode = StatusCodes.Status401Unauthorized
+            };
+
+
+            return result.ExecuteResultAsync(new ActionContext
+            {
+                HttpContext = context.HttpContext,
+                RouteData = new RouteData(),
+            });
+        },
+        
+        OnChallenge = context =>
+        {
+            context.HandleResponse();
+            var result = new JsonResult(new
+            {
+                EC = -1,
+                EM = "Yêu cầu đăng nhập", 
+            })
+            {
+                StatusCode = StatusCodes.Status401Unauthorized
+            };
+
+     
+            return result.ExecuteResultAsync(new ActionContext
+            {
+                HttpContext = context.HttpContext,
+                RouteData = new RouteData(),
+            });
+        }
+    };
 });
 
 builder.Services.AddControllersWithViews();
@@ -86,8 +131,8 @@ builder.Services.AddStackExchangeRedisCache(options =>
 builder.Services.AddSingleton<IConnectionMultiplexer>(provider =>
     ConnectionMultiplexer.Connect(redisConfig));
 
-
 builder.Services.AddScoped<IRedisCacheService, RedisCacheService>();
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
@@ -106,7 +151,9 @@ app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseCors("AllowAll");
 
+app.UseAuthentication();
 app.UseAuthorization();
+
 
 app.MapControllers();
 

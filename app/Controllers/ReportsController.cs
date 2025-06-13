@@ -2,18 +2,21 @@
 using app.Models;
 using app.Service;
 using Azure.Core;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
 
 namespace app.Controllers
 {
+    [Authorize]
     [Route("api/v1/reports")]
     [ApiController]
     public class ReportsController : ControllerBase
@@ -24,37 +27,6 @@ namespace app.Controllers
         public ReportsController(EasyPublishingContext context)
         {
             _context = context;
-        }
-        private JwtSecurityToken VerifyToken()
-        {
-            var tokenCookie = Request.Cookies["access_token"];
-            var tokenBearer = extractToken();
-            var handler = new JwtSecurityTokenHandler();
-            var jwtSecurityToken = handler.ReadJwtToken(!String.IsNullOrEmpty(tokenBearer) ? tokenBearer : tokenCookie);
-            return jwtSecurityToken;
-        }
-
-        private string extractToken()
-        {
-            if (!String.IsNullOrEmpty(Request.Headers.Authorization) &&
-                Request.Headers.Authorization.ToString().Split(' ')[0] == "Bearer" &&
-                !String.IsNullOrEmpty(Request.Headers.Authorization.ToString().Split(' ')[1]))
-            {
-                return Request.Headers.Authorization.ToString().Split(' ')[1];
-            }
-            return null;
-        }
-        private int GetUserId()
-        {
-            var jwtSecurityToken = new JwtSecurityToken();
-            int userId = 0;
-            try
-            {
-                jwtSecurityToken = VerifyToken();
-                userId = Int32.Parse(jwtSecurityToken.Claims.First(c => c.Type == "userId").Value);
-            }
-            catch (Exception) { }
-            return userId;
         }
 
         [HttpGet("options")]
@@ -161,8 +133,8 @@ namespace app.Controllers
         [HttpPost("send")]
         public async Task<ActionResult> SendReport(ReportDTO reportDTO)
         {
-            int userId = GetUserId();
-            if (userId == 0) return _msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
             if (!ModelState.IsValid) return _msgService.MsgActionReturn(-1, "Thiếu điều kiện");
             var user_report = 0;
             var mail_content = "";

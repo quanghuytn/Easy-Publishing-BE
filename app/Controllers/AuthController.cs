@@ -2,6 +2,7 @@
 using app.Models;
 using app.Service;
 using Azure.Core;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -141,6 +142,7 @@ namespace app.Controllers
                 Id = userResponse.UserId,
                 Email = userResponse.Email,
                 Username = userResponse.Username,
+                Role = userResponse.Role
             };
             var accessToken = CreateToken(userDTO);
             var cookieOptions = new CookieOptions();
@@ -253,28 +255,51 @@ namespace app.Controllers
 
         private string CreateToken(UserDTO user)
         {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var tokenDescriptor = new SecurityTokenDescriptor
+            var claims = new List<Claim>
             {
-                Subject = new ClaimsIdentity(new Claim[]
-                {
-                new Claim("userId", user.Id.ToString()),
-                new Claim("email", user.Email),
-                new Claim("username", user.Username),
-                }),
-                Issuer = _configuration.GetSection("JWTConfig:Issuer").Value!,
-                Audience = _configuration.GetSection("JWTConfig:Audience").Value!,
-                Expires = DateTime.UtcNow.AddDays(Int32.Parse(_configuration.GetSection("JWTConfig:Time").Value!)),
-                SigningCredentials = new SigningCredentials(
-                    new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.GetSection("JWTConfig:Key").Value!)),
-                    SecurityAlgorithms.HmacSha256)
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+                new Claim(JwtRegisteredClaimNames.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role)
             };
-            var token = tokenHandler.CreateToken(tokenDescriptor);
 
-            // Serialize token to string
-            string jwt = tokenHandler.WriteToken(token);
-            return jwt;
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWTConfig:Key"]));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                issuer: _configuration["JWTConfig:Issuer"],
+                audience: _configuration["JWTConfig:Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddDays(Int32.Parse(_configuration.GetSection("JWTConfig:Time").Value!)),
+                signingCredentials: creds);
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
+
+        //private string CreateToken(UserDTO user)
+        //{
+        //    var tokenHandler = new JwtSecurityTokenHandler();
+        //    var tokenDescriptor = new SecurityTokenDescriptor
+        //    {
+        //        Subject = new ClaimsIdentity(new Claim[]
+        //        {
+        //        new Claim("userId", user.Id.ToString()),
+        //        new Claim("email", user.Email),
+        //        new Claim("username", user.Username),
+        //        new Claim("Role", user.Role),
+        //        }),
+        //        Issuer = _configuration.GetSection("JWTConfig:Issuer").Value!,
+        //        Audience = _configuration.GetSection("JWTConfig:Audience").Value!,
+        //        Expires = DateTime.UtcNow.AddDays(Int32.Parse(_configuration.GetSection("JWTConfig:Time").Value!)),
+        //        SigningCredentials = new SigningCredentials(
+        //            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.GetSection("JWTConfig:Key").Value!)),
+        //            SecurityAlgorithms.HmacSha256)
+        //    };
+        //    var token = tokenHandler.CreateToken(tokenDescriptor);
+
+        //    // Serialize token to string
+        //    string jwt = tokenHandler.WriteToken(token);
+        //    return jwt;
+        //}
 
         private string CreateForgotPasswordToken(string email)
         {
@@ -319,26 +344,6 @@ namespace app.Controllers
 
             string jwt = tokenHandler.WriteToken(token);
             return jwt;
-        }
-
-        private string extractToken()
-        {
-            if (!String.IsNullOrEmpty(Request.Headers.Authorization) &&
-                Request.Headers.Authorization.ToString().Split(' ')[0] == "Bearer" &&
-                !String.IsNullOrEmpty(Request.Headers.Authorization.ToString().Split(' ')[1]))
-            {
-                return Request.Headers.Authorization.ToString().Split(' ')[1];
-            }
-            return null;
-        }
-
-        private JwtSecurityToken VerifyToken()
-        {
-            var tokenCookie = Request.Cookies["access_token"];
-            var tokenBearer = extractToken();
-            var handler = new JwtSecurityTokenHandler();
-            var jwtSecurityToken = handler.ReadJwtToken(!String.IsNullOrEmpty(tokenBearer) ? tokenBearer : tokenCookie);
-            return jwtSecurityToken;
         }
 
         [HttpPost("forgot_password")]
@@ -444,14 +449,13 @@ namespace app.Controllers
             });
         }
 
+        [Authorize]                
         [HttpGet("account")]
         public IActionResult GetAccount()
         {
-            var jwtSecurityToken = new JwtSecurityToken();
             try
             {
-                jwtSecurityToken = VerifyToken();
-                int userId = Int32.Parse(jwtSecurityToken.Claims.First(c => c.Type == "userId").Value);
+                int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
                 var user = _context.Users.Where(u => u.UserId == userId)
                     .Select(u => new
                     {
@@ -493,13 +497,11 @@ namespace app.Controllers
         [HttpPut("update_profile")]
         public IActionResult EditProfile([FromBody] UserProfileForm data)
         {
-            var jwtSecurityToken = new JwtSecurityToken();
             string accessToken = null;
             try
             {
-                jwtSecurityToken = VerifyToken();
-                string userId = jwtSecurityToken.Claims.First(c => c.Type == "userId").Value;
-                var user = _context.Users.FirstOrDefault(u => u.UserId == int.Parse(userId));
+                int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+                var user = _context.Users.FirstOrDefault(u => u.UserId == userId);
                 user.UserFullname = data.UserFullname;
                 user.Address = data.Address;
                 user.Phone = data.Phone;
@@ -520,7 +522,7 @@ namespace app.Controllers
                 {
                     Id = user.UserId,
                     Email = user.Email,
-                    Username = user.Username,
+                    Username = user.Username
                 };
                 accessToken = CreateToken(userDTO);
                 var cookieOptions = new CookieOptions();
@@ -554,9 +556,8 @@ namespace app.Controllers
             string fileUploaded = "";
             try
             {
-                jwtSecurityToken = VerifyToken();
-                string userId = jwtSecurityToken.Claims.First(c => c.Type == "userId").Value;
-                var user = _context.Users.FirstOrDefault(u => u.UserId == int.Parse(userId));
+                int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+                var user = _context.Users.FirstOrDefault(u => u.UserId == userId);
                 if (data.image.Length > 0)
                 {
                     string path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Assets/images/avatar");
@@ -605,13 +606,11 @@ namespace app.Controllers
         [HttpPost("change_password")]
         public IActionResult ChangePassword([FromBody] ChangePasswordForm data)
         {
-            var jwtSecurityToken = new JwtSecurityToken();
             UserDTO userDTO = null;
             try
             {
-                jwtSecurityToken = VerifyToken();
-                string userId = jwtSecurityToken.Claims.First(c => c.Type == "userId").Value;
-                var user = _context.Users.FirstOrDefault(u => u.UserId == int.Parse(userId));
+                int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+                var user = _context.Users.FirstOrDefault(u => u.UserId == userId);
                 if (!hashService.Verify(user.Password, data.OldPassword))
                 {
                     return new JsonResult(new

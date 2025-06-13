@@ -15,6 +15,8 @@ using static app.Controllers.StoriesController;
 using Humanizer;
 using app.Service.Caching;
 using app.DTOs;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace app.Controllers
 {
@@ -30,26 +32,6 @@ namespace app.Controllers
         {
             _context = context;
             _cache = cache;
-        }
-
-        private JwtSecurityToken VerifyToken()
-        {
-            var tokenCookie = Request.Cookies["access_token"];
-            var tokenBearer = extractToken();
-            var handler = new JwtSecurityTokenHandler();
-            var jwtSecurityToken = handler.ReadJwtToken(!String.IsNullOrEmpty(tokenBearer) ? tokenBearer : tokenCookie);
-            return jwtSecurityToken;
-        }
-
-        private string extractToken()
-        {
-            if (!String.IsNullOrEmpty(Request.Headers.Authorization) &&
-                Request.Headers.Authorization.ToString().Split(' ')[0] == "Bearer" &&
-                !String.IsNullOrEmpty(Request.Headers.Authorization.ToString().Split(' ')[1]))
-            {
-                return Request.Headers.Authorization.ToString().Split(' ')[1];
-            }
-            return null;
         }
 
         /// GET: api/Stories
@@ -94,18 +76,11 @@ namespace app.Controllers
             return _msgService.MsgReturn(0, "Thông tin truyện", stories);
         }
 
-        // GET: api/Stories/5
+        [Authorize]
         [HttpGet("story_detail")]
         public async Task<ActionResult> GetStoryDetail(int storyId)
         {
-            var jwtSecurityToken = new JwtSecurityToken();
-            int userId = 0;
-            try
-            {
-                jwtSecurityToken = VerifyToken();
-                userId = Int32.Parse(jwtSecurityToken.Claims.First(c => c.Type == "userId").Value);
-            }
-            catch (Exception) { }
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
 
             var stories = await _context.Stories.Where(c => c.StoryId == storyId && c.Status > 0)
                         .Include(c => c.Author).Include(c => c.StoryInteraction)
@@ -186,19 +161,11 @@ namespace app.Controllers
             return _msgService.MsgReturn(0, "Truyện liên quan", verified.Take(3));
         }
 
-
+        [Authorize]
         [HttpGet("prints")]
         public async Task<ActionResult> CreatePrint(int storyId)
         {
-            var jwtSecurityToken = new JwtSecurityToken();
-            int userId = 0;
-            try
-            {
-                jwtSecurityToken = VerifyToken();
-                userId = Int32.Parse(jwtSecurityToken.Claims.First(c => c.Type == "userId").Value);
-            }
-            catch (Exception) { }
-            if (userId == 0) return _msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
             var data = await _context.Stories.Where(s => s.StoryId == storyId && s.AuthorId == userId)
                     .Include(c => c.Volumes).ThenInclude(c => c.Chapters)
@@ -328,17 +295,11 @@ namespace app.Controllers
             return _msgService.MsgReturn(0, "Kết quả tìm kiếm", stories);
         }
 
+        [Authorize]
         [HttpGet("story_information")]
         public async Task<ActionResult> GetStoryInfor(int storyId)
         {
-            var jwtSecurityToken = new JwtSecurityToken();
-            int userId = 0;
-            try
-            {
-                jwtSecurityToken = VerifyToken();
-                userId = Int32.Parse(jwtSecurityToken.Claims.First(c => c.Type == "userId").Value);
-            }
-            catch (Exception) { }
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
             var story = await _context.Stories.Where(s => s.StoryId == storyId && s.AuthorId == userId)
                 .Select(s => new
                 {
@@ -502,14 +463,7 @@ namespace app.Controllers
         [HttpPut("update_story")]
         public async Task<ActionResult> EditStory(SaveStoryForm story)
         {
-            var jwtSecurityToken = new JwtSecurityToken();
-            int userId = 0;
-            try
-            {
-                jwtSecurityToken = VerifyToken();
-                userId = Int32.Parse(jwtSecurityToken.Claims.First(c => c.Type == "userId").Value);
-            }
-            catch (Exception) { }
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
 
             var currentStory = _context.Stories.Include(s => s.Categories).FirstOrDefault(s => s.StoryId == story.StoryId && s.AuthorId == userId);
             if (currentStory == null)
@@ -604,17 +558,11 @@ namespace app.Controllers
 
         }
 
+        [Authorize]
         [HttpPut("delete_story")]
         public async Task<ActionResult> DeleteStory(int storyId)
         {
-            var jwtSecurityToken = new JwtSecurityToken();
-            int userId = 0;
-            try
-            {
-                jwtSecurityToken = VerifyToken();
-                userId = Int32.Parse(jwtSecurityToken.Claims.First(c => c.Type == "userId").Value);
-            }
-            catch (Exception) { }
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
             var user = _context.Users.FirstOrDefault(u => u.UserId == userId);
             var currentStory = _context.Stories.FirstOrDefault(s => s.StoryId == storyId && (s.AuthorId == userId || user.RoleId == 1));
@@ -665,12 +613,10 @@ namespace app.Controllers
         [HttpPut("update_storyimage")]
         public IActionResult ChangeAvatar([FromForm] StoryImageForm data)
         {
-            var jwtSecurityToken = new JwtSecurityToken();
             string fileUploaded = "";
             try
             {
-                jwtSecurityToken = VerifyToken();
-                int userId = int.Parse(jwtSecurityToken.Claims.First(c => c.Type == "userId").Value);
+                int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
                 var story = _context.Stories.Include(s => s.Categories).FirstOrDefault(s => s.StoryId == data.storyId && s.AuthorId == userId);
                 if (story == null)
                 {

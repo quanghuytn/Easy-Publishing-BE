@@ -21,6 +21,6 @@
         public string? UserImage { get; set; }
 
         public int? Status { get; set; }
-        //public string? Role { get; set; }
+        public string? Role { get; set; }
     }
 }
