@@ -1,6 +1,7 @@
 ﻿using app.DTOs;
 using app.Models;
 using app.Service;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
@@ -9,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Drawing.Printing;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace app.Controllers
@@ -768,44 +770,11 @@ namespace app.Controllers
             return _msgService.MsgReturn(0, "Danh sách truyện của tác giả", stories);
         }
 
-        private JwtSecurityToken VerifyToken()
-        {
-            var tokenCookie = Request.Cookies["access_token"];
-            var tokenBearer = extractToken();
-            var handler = new JwtSecurityTokenHandler();
-            var jwtSecurityToken = handler.ReadJwtToken(!String.IsNullOrEmpty(tokenBearer) ? tokenBearer : tokenCookie);
-            return jwtSecurityToken;
-        }
-
-        private string extractToken()
-        {
-            if (!String.IsNullOrEmpty(Request.Headers.Authorization) &&
-                Request.Headers.Authorization.ToString().Split(' ')[0] == "Bearer" &&
-                !String.IsNullOrEmpty(Request.Headers.Authorization.ToString().Split(' ')[1]))
-            {
-                return Request.Headers.Authorization.ToString().Split(' ')[1];
-            }
-            return null;
-        }
-        private int GetUserId()
-        {
-            var jwtSecurityToken = new JwtSecurityToken();
-            int userId = 0;
-            try
-            {
-                jwtSecurityToken = VerifyToken();
-                userId = Int32.Parse(jwtSecurityToken.Claims.First(c => c.Type == "userId").Value);
-            }
-            catch (Exception) { }
-            return userId;
-        }
-
+        [Authorize]
         [HttpGet("author_manage")]
         public async Task<ActionResult> GetStoryOfAuthor(string? title, [FromQuery] List<string> sort, int page, int pageSize)
         {
-            int userId = GetUserId();
-
-            if (userId == 0) return _msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
             var stories = await _context.Stories.Where(c => c.AuthorId == userId && c.Status >= 0)
                 .Include(c => c.Categories)
@@ -856,13 +825,12 @@ namespace app.Controllers
         }
 
         // get stories owned
+        [Authorize]
         [HttpGet("my_owned")]
         [EnableQuery]
         public async Task<ActionResult> GetMyOwned(int page, int pageSize)
         {
-            int userId = GetUserId();
-
-            if (userId == 0) return _msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
             var stories = await _context.Stories.Where(c => c.Users.Any(u => u.UserId == userId) && c.Status > 0)
                 .Include(c => c.Users)
@@ -907,13 +875,12 @@ namespace app.Controllers
         }
 
         // get stories follow
+        [Authorize]
         [HttpGet("my_follow")]
         [EnableQuery]
         public async Task<ActionResult> GetMyFollow(int page, int pageSize)
         {
-            int userId = GetUserId();
-
-            if (userId == 0) return _msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
             var stories = await _context.Stories.Where(c => c.StoryFollowLikes.Any(u => u.UserId == userId && u.Follow == true) && c.Status > 0)
                 .Include(c => c.StoryFollowLikes)
@@ -959,13 +926,12 @@ namespace app.Controllers
                 stories.Skip(pageSize * (page - 1)).Take(pageSize), page, pageSize, stories.Count);
         }
 
+        [Authorize]
         [HttpGet("my_read")]
         [EnableQuery]
         public async Task<ActionResult> GetMyReadHistory(int page, int pageSize)
         {
-            int userId = GetUserId();
-
-            if (userId == 0) return _msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
             var stories = await _context.Stories.Where(c => c.StoryReads.Any(u => u.UserId == userId) && c.Status > 0)
                 .Include(c => c.Author)

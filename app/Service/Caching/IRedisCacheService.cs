@@ -1,4 +1,4 @@
-﻿using app.DTOs;
+﻿using app.DTOs.Story;
 
 namespace app.Service.Caching
 {

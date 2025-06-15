@@ -1,9 +1,10 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
+using app.Interface;
 
 namespace app.Service
 {
-    public class HashService
+    public class HashService : IHashService
     {
         private const int SaltSize = 128 / 8;
         private const int KeySize = 256 / 8;
@@ -25,7 +26,7 @@ namespace app.Service
             return CryptographicOperations.FixedTimeEquals(hash, hashInput);
         }
 
-        public static String HmacSHA512(string key, string inputData)
+        public static string HmacSHA512(string key, string inputData)
         {
             var hash = new StringBuilder();
             byte[] keyBytes = Encoding.UTF8.GetBytes(key);
@@ -41,7 +42,7 @@ namespace app.Service
             return hash.ToString();
         }
 
-        public static String HmacSHA256(string inputData, string key)
+        public static string HmacSHA256(string inputData, string key)
         {
             byte[] keyByte = Encoding.UTF8.GetBytes(key);
             byte[] messageBytes = Encoding.UTF8.GetBytes(inputData);

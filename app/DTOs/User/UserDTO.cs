@@ -1,4 +1,4 @@
-﻿namespace app.DTOs
+﻿namespace app.DTOs.User
 {
     public class UserDTO
     {
@@ -19,8 +19,9 @@
         public string? Phone { get; set; }
 
         public string? UserImage { get; set; }
+        public string? Password { get; set; }
 
-        public int? Status { get; set; }
+        public string? Status { get; set; }
         public string? Role { get; set; }
     }
 }

@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Configuration.UserSecrets;
-using Newtonsoft.Json.Serialization;
+﻿using Newtonsoft.Json.Serialization;
 using Newtonsoft.Json;
 using System.Text;
 

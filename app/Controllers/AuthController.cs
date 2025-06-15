@@ -1,4 +1,6 @@
-﻿using app.DTOs;
+﻿using app.DTOs.Auth;
+using app.DTOs.User;
+using app.Interface;
 using app.Models;
 using app.Service;
 using Azure.Core;
@@ -16,71 +18,15 @@ namespace app.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-        private readonly EasyPublishingContext _context;
         private readonly IConfiguration _configuration;
+        private readonly IUserRepository _userRepo;
         private HashService hashService = new HashService();
         private MailService mailService = new MailService();
 
-        public AuthController(EasyPublishingContext context, IConfiguration configuration)
+        public AuthController( IConfiguration configuration, IUserRepository userRepo)
         {
-            _context = context;
             _configuration = configuration;
-        }
-
-
-        public class LoginForm
-        {
-            public string EmailOrUsername { get; set; }
-            public string Password { get; set; }
-            public bool Remember { get; set; }
-        }
-
-        public class RegisterForm
-        {
-            public string Email { get; set; }
-            public string Username { get; set; }
-            public string Password { get; set; }
-            public string ConfirmPassword { get; set; }
-        }
-
-        public class ForgotPasswordForm
-        {
-            public string Email { get; set; }
-        }
-
-        public class ResetPasswordForm
-        {
-            public string Token { get; set; }
-            public string Password { get; set; }
-            public string ConfirmPassword { get; set; }
-        }
-
-        public class ChangePasswordForm
-        {
-            public string OldPassword { get; set; }
-            public string Password { get; set; }
-            public string ConfirmPassword { get; set; }
-        }
-
-        public class UserProfileForm
-        {
-            public string? UserFullname { get; set; }
-            public string? Gender { get; set; }
-            public DateTime? Dob { get; set; }
-            public string? Phone { get; set; }
-            public string? Address { get; set; }
-            public string? DescriptionMarkdown { get; set; }
-            public string? DescriptionHTML { get; set; }
-        }
-
-        public class AvatarForm
-        {
-            public IFormFile image { get; set; }
-        }
-
-        public class VerifyTokenForm
-        {
-            public string Token { get; set; }
+            _userRepo = userRepo;
         }
 
         [HttpPost("login")]
@@ -94,7 +40,7 @@ namespace app.Controllers
                     EM = "Vui lòng nhập đủ thông tin yêu cầu",
                 });
             }
-            var user = _context.Users.Where(u => u.Username.Equals(data.EmailOrUsername) || u.Email.Equals(data.EmailOrUsername)).FirstOrDefault();
+            var user = _userRepo.getUserByUsernameOrEmail(data.EmailOrUsername);
             if (user == null)
             {
                 return new JsonResult(new
@@ -104,23 +50,7 @@ namespace app.Controllers
                 });
             };
             string password = user.Password;
-            var userResponse = _context.Users.Where(u => u.Username.Equals(data.EmailOrUsername) || u.Email.Equals(data.EmailOrUsername)).Select(u => new
-            {
-                UserId = u.UserId,
-                Role = u.Role.RoleName,
-                Email = u.Email,
-                Username = u.Username,
-                UserFullname = u.UserFullname,
-                Gender = u.Gender == true ? "Male" : "Female",
-                Dob = u.Dob,
-                Address = u.Address,
-                Phone = u.Phone,
-                Status = u.Status == true ? "Active" : "Inactive",
-                UserImage = u.UserImage,
-                DescriptionMarkdown = u.DescriptionMarkdown,
-                DescriptionHTML = u.DescriptionHtml,
-                TLT = u.Wallets.Select(w => w.Fund).FirstOrDefault()
-            }).FirstOrDefault();
+            var userResponse = _userRepo.getAccountById(user.UserId);
             if (!hashService.Verify(password, data.Password))
             {
                 return new JsonResult(new
@@ -183,7 +113,7 @@ namespace app.Controllers
         }
 
         [HttpPost("register")]
-        public IActionResult Register([FromBody] RegisterForm data)
+        public async Task<IActionResult> Register([FromBody] RegisterForm data)
         {
             if (string.IsNullOrEmpty(data.Email) || string.IsNullOrEmpty(data.Password) || string.IsNullOrEmpty(data.Username))
             {
@@ -193,7 +123,7 @@ namespace app.Controllers
                     EM = "Vui lòng nhập đủ thông tin yêu cầu",
                 });
             }
-            var user = _context.Users.Where(u => u.Email.Equals(data.Email)).FirstOrDefault();
+            var user = _userRepo.getUserByUsernameOrEmail(data.Email);
             if (user != null)
             {
                 return new JsonResult(new
@@ -202,7 +132,7 @@ namespace app.Controllers
                     EM = "Email đã được đăng ký bởi tài khoản khác",
                 });
             }
-            user = _context.Users.Where(u => u.Username.Equals(data.Username)).FirstOrDefault();
+            user = _userRepo.getUserByUsernameOrEmail(data.Username);
             if (user != null)
             {
                 return new JsonResult(new
@@ -222,21 +152,13 @@ namespace app.Controllers
             string passwordHash = hashService.Hash(data.Password);
             try
             {
-                _context.Users.Add(new User
+                await _userRepo.addNewUser(new User
                 {
                     Email = data.Email,
                     Password = passwordHash,
                     Username = data.Username,
                     Gender = true
                 });
-                _context.SaveChanges();
-                _context.Wallets.Add(new Wallet
-                {
-                    UserId = _context.Users.FirstOrDefault(u => u.Username.Equals(data.Username)).UserId,
-                    Fund = 0,
-                    Refund = 0
-                });
-                _context.SaveChanges();
             }
             catch (Exception)
             {
@@ -349,7 +271,7 @@ namespace app.Controllers
         [HttpPost("forgot_password")]
         public IActionResult SendMailConfirm([FromBody] ForgotPasswordForm data)
         {
-            var user = _context.Users.Where(u => u.Email.Equals(data.Email)).FirstOrDefault();
+            var user = _userRepo.getUserByUsernameOrEmail(data.Email);
             if (user == null)
             {
                 return new JsonResult(new
@@ -384,58 +306,45 @@ namespace app.Controllers
             });
         }
 
+        [Authorize]
         [HttpPost("reset_password")]
         public IActionResult ResetPassword([FromBody] ResetPasswordForm data)
         {
-            string email;
-            var handler = new JwtSecurityTokenHandler();
-            try
-            {
-                var token = handler.ReadJwtToken(data.Token);
-                email = token.Claims.First(c => c.Type == "email").Value;
-                var user = _context.Users.FirstOrDefault(u => u.Email.Equals(email));
-                if (user == null)
-                {
-                    return new JsonResult(new
-                    {
-                        EC = 1,
-                        EM = "Người dùng không tồn tại"
-                    });
-                }
-                if (!data.Password.Equals(data.ConfirmPassword))
-                {
-                    return new JsonResult(new
-                    {
-                        EC = 2,
-                        EM = "Xác nhận mật khẩu không khớp với mật khẩu đã nhập"
-                    });
-                }
-                user.Password = hashService.Hash(data.Password);
+            string email = User.FindFirstValue(JwtRegisteredClaimNames.Email);
 
-                try
-                {
-                    mailService.Send(email,
-                        "Easy Publishing: Đặt lại mật khẩu",
-                        "<b>Xin chào " + user.Username + ",</b>" +
-                        "<p>Mật khẩu của bạn đã được đặt lại thành công!</p> " +
-                        "<p>Mật khẩu mới: <b>" + data.Password + "</b></p>");
-                }
-                catch (Exception ex)
-                {
-                    return new JsonResult(new
-                    {
-                        EC = 3,
-                        EM = "Error: " + ex.Message,
-                    });
-                }
-                _context.SaveChanges();
-            }
-            catch (Exception)
+            var user = _userRepo.getUserByUsernameOrEmail(email);
+            if (user == null)
             {
                 return new JsonResult(new
                 {
-                    EC = -1,
-                    EM = "Yêu cầu đăng nhập"
+                    EC = 1,
+                    EM = "Người dùng không tồn tại"
+                });
+            }
+            if (!data.Password.Equals(data.ConfirmPassword))
+            {
+                return new JsonResult(new
+                {
+                    EC = 2,
+                    EM = "Xác nhận mật khẩu không khớp với mật khẩu đã nhập"
+                });
+            }
+
+            try
+            {
+                _userRepo.resetPassword(user.UserId, hashService.Hash(data.Password));
+                mailService.Send(email,
+                    "Easy Publishing: Đặt lại mật khẩu",
+                    "<b>Xin chào " + user.Username + ",</b>" +
+                    "<p>Mật khẩu của bạn đã được đặt lại thành công!</p> " +
+                    "<p>Mật khẩu mới: <b>" + data.Password + "</b></p>");
+            }
+            catch (Exception ex)
+            {
+                return new JsonResult(new
+                {
+                    EC = 3,
+                    EM = "Error: " + ex.Message,
                 });
             }
             return new JsonResult(new
@@ -453,70 +362,30 @@ namespace app.Controllers
         [HttpGet("account")]
         public IActionResult GetAccount()
         {
-            try
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            var user = _userRepo.getAccountById(userId);
+            return new JsonResult(new
             {
-                int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
-                var user = _context.Users.Where(u => u.UserId == userId)
-                    .Select(u => new
-                    {
-                        UserId = u.UserId,
-                        Role = u.Role.RoleName,
-                        Email = u.Email,
-                        Username = u.Username,
-                        UserFullname = u.UserFullname,
-                        Gender = u.Gender == true ? "Male" : "Female",
-                        Dob = u.Dob,
-                        Address = u.Address,
-                        Phone = u.Phone,
-                        Status = u.Status == true ? "Active" : "Inactive",
-                        UserImage = u.UserImage,
-                        DescriptionMarkdown = u.DescriptionMarkdown,
-                        DescriptionHTML = u.DescriptionHtml,
-                        TLT = u.Wallets.Select(w => w.Fund).FirstOrDefault()
-                    }).FirstOrDefault();
-                return new JsonResult(new
+                EC = 0,
+                EM = "Thông tin tài khoản",
+                DT = new
                 {
-                    EC = 0,
-                    EM = "Thông tin tài khoản",
-                    DT = new
-                    {
-                        user = user
-                    },
-                });
-            }
-            catch (Exception)
-            {
-                return new JsonResult(new
-                {
-                    EC = -1,
-                    EM = "Yêu cầu đăng nhập"
-                });
-            }
+                    user = user
+                },
+            });
+
+
         }
 
+        [Authorize]
         [HttpPut("update_profile")]
-        public IActionResult EditProfile([FromBody] UserProfileForm data)
+        public async Task<IActionResult> EditProfile([FromBody] UserProfileForm data)
         {
             string accessToken = null;
             try
             {
                 int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
-                var user = _context.Users.FirstOrDefault(u => u.UserId == userId);
-                user.UserFullname = data.UserFullname;
-                user.Address = data.Address;
-                user.Phone = data.Phone;
-                user.Dob = data.Dob;
-                if (data.Gender.ToLower().Equals("male"))
-                {
-                    user.Gender = true;
-                }
-                else
-                {
-                    user.Gender = false;
-                }
-                user.DescriptionMarkdown = data.DescriptionMarkdown;
-                user.DescriptionHtml = data.DescriptionHTML;
-                _context.SaveChanges();
+                var user = await _userRepo.updateUser(userId, data);
 
                 UserDTO userDTO = new UserDTO
                 {
@@ -549,33 +418,17 @@ namespace app.Controllers
             });
         }
 
+        [Authorize]
         [HttpPut("update_avatar")]
         public IActionResult ChangeAvatar([FromForm] AvatarForm data)
         {
-            var jwtSecurityToken = new JwtSecurityToken();
             string fileUploaded = "";
             try
             {
+                
                 int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
-                var user = _context.Users.FirstOrDefault(u => u.UserId == userId);
-                if (data.image.Length > 0)
-                {
-                    string path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Assets/images/avatar");
-                    if (!Directory.Exists(path))
-                        Directory.CreateDirectory(path);
-                    var ext = Path.GetExtension(data.image.FileName);
-                    var name = Path.GetFileNameWithoutExtension(data.image.FileName);
-                    var fileName = name + DateTime.Now.ToString("yyyyMMddHHmmssffff") + ext;
-                    string filePath = Path.Combine(path, fileName);
-                    using (FileStream stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        data.image.CopyTo(stream);
-                    }
-                    user.UserImage = fileName;
-                    fileUploaded = user.UserImage;
-                    _context.SaveChanges();
-                }
-                else
+                fileUploaded = _userRepo.updateAvatar(userId, data);
+                if (fileUploaded == null)
                 {
                     return new JsonResult(new
                     {
@@ -603,14 +456,14 @@ namespace app.Controllers
             });
         }
 
+        [Authorize]
         [HttpPost("change_password")]
         public IActionResult ChangePassword([FromBody] ChangePasswordForm data)
         {
-            UserDTO userDTO = null;
             try
             {
                 int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
-                var user = _context.Users.FirstOrDefault(u => u.UserId == userId);
+                var user = _userRepo.getUserById(userId);
                 if (!hashService.Verify(user.Password, data.OldPassword))
                 {
                     return new JsonResult(new
@@ -627,8 +480,7 @@ namespace app.Controllers
                         EM = "Xác nhận mật khẩu không khớp với mật khẩu đã nhập"
                     });
                 }
-                user.Password = hashService.Hash(data.Password);
-                _context.SaveChanges();
+                _userRepo.resetPassword(userId, hashService.Hash(data.Password));
             }
             catch (Exception)
             {

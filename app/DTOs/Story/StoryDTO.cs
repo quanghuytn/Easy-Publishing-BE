@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-namespace app.DTOs
+namespace app.DTOs.Story
 {
     public class StoryDTO
     {

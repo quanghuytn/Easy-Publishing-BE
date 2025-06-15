@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Configuration.UserSecrets;
-using System.Net;
+﻿using System.Net;
 using System.Text;
 
 namespace app.Service.VNPayService

@@ -1,6 +1,6 @@
-﻿namespace app.DTOs
+﻿namespace app.DTOs.Report
 {
-    public class ReportDTO
+    public class SendReportDTO
     {
         public int ReportTypeId { get; set; }
 

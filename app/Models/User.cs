@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace app.Models;
+﻿namespace app.Models;
 
 public partial class User
 {

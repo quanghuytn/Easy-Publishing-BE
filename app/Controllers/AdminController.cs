@@ -39,7 +39,7 @@ namespace app.Controllers
             try
             {
                 jwtSecurityToken = VerifyToken();
-                userId = Int32.Parse(jwtSecurityToken.Claims.First(c => c.Type == "userId").Value);
+                userId = Int32.Parse(jwtSecurityToken.Claims.First(c => c.Type == "sub").Value);
             }
             catch (Exception) { }
             if(userId == 0)

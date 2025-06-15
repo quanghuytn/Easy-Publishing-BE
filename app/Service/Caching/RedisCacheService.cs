@@ -1,4 +1,4 @@
-﻿using app.DTOs;
+﻿using app.DTOs.Story;
 using app.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;

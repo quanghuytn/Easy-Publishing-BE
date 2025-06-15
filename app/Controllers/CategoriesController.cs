@@ -10,8 +10,9 @@ using NuGet.Common;
 using app.Service;
 using System.Drawing.Printing;
 using app.Service.Caching;
-using app.DTOs;
 using Microsoft.AspNetCore.Authorization;
+using app.Interface;
+using app.DTOs.Category;
 
 namespace app.Controllers
 {
@@ -19,95 +20,53 @@ namespace app.Controllers
     [ApiController]
     public class CategoriesController : ControllerBase
     {
-        private readonly EasyPublishingContext _context;
         private MsgService _msgService = new MsgService();
-        private readonly IRedisCacheService _cache;
-        public CategoriesController(EasyPublishingContext context, IRedisCacheService cache)
+        private readonly ICategoryRepository _categoryRepo;
+        public CategoriesController(ICategoryRepository categoryRepo)
         {
-            _context = context;
-            _cache = cache;
+            _categoryRepo = categoryRepo;
         }
 
         // GET: api/Categories
         [HttpGet]
         public async Task<ActionResult> GetCategories()
         {
-            var cacheKey = "categories";
-            var cate = await _cache.StringGetAsync<IEnumerable<CategoryDTO>>(cacheKey);
-            if (cate is null)
-            {
-                cate = await _context.Categories
-                .Include(c => c.Stories)
-                .Select(c => new CategoryDTO
-                {
-                    CategoryId = c.CategoryId,
-                    CategoryName = c.CategoryName,
-                    CategoryDescription = c.CategoryDescription.Substring(0, 50) + "...",
-                    CategoryBanner = c.CategoryBanner,
-                    StoriesNumber = c.Stories.Count,
-                })
-                .ToListAsync();
-
-                _cache.StringSetAsync(cacheKey, cate);
-            }
-
+            var cate = await _categoryRepo.GetAllCategories();
             return _msgService.MsgReturn(0, "Các thể loại truyện", cate);
         }
 
         // GET: api/Categories
         [HttpGet("cate_shelves_detail")]
-        public async Task<ActionResult> GetCategoriy(int cateId)
+        public async Task<ActionResult> GetCategoryById(int cateId)
         {
-            var cate = await _context.Categories.Where(c => c.CategoryId == cateId)
-                .Select(c => new
-                {
-                    c.CategoryId,
-                    CategoryName = c.CategoryName.Replace("Truyện ", ""),
-                    c.CategoryDescription,
-                    c.CategoryBanner,
-                    StoriesNumber = c.Stories.Count(),
-                })
-                .ToListAsync();
-            if (cate == null) return _msgService.MsgActionReturn(-1, "Không có loại đó");
-            return _msgService.MsgReturn(0, "Chi tiết thể loại", cate.FirstOrDefault());
+            var category = await _categoryRepo.GetCategoryById(cateId);
+            if (category == null) return _msgService.MsgActionReturn(-1, "Không có loại đó");
+            return _msgService.MsgReturn(0, "Chi tiết thể loại", category);
         }
+
         [HttpGet("{id}")]
-        public async Task<ActionResult<Category>> GetCategory(int id)
+        public async Task<ActionResult<CategoryDto>> GetCategory(int id)
         {
-            if (_context.Categories == null)
-            {
-                return NotFound();
-            }
-            var category = await _context.Categories.FindAsync(id);
+            var category = await _categoryRepo.GetCategoryById(id); ;
             if (category == null)
             {
                 return NotFound();
             }
             return category;
         }
+
         // GET: api/filter
         [HttpGet("options")]
         public async Task<ActionResult> GetOptionFilter()
         {
-            var cate = await _context.Categories
-                .Include(c => c.Stories)
-                .Select(c => new
-                {
-                    c.CategoryId,
-                    c.CategoryName,
-                    c.CategoryDescription
-                })
-                .ToListAsync();
-            var stories = await _context.Stories.Select(s => new { s.StoryPrice, }).OrderByDescending(s => s.StoryPrice).ToListAsync();
-            var to = stories.Max(c => c.StoryPrice);
-            var from = stories.Min(c => c.StoryPrice);
+            var optionFilter = await _categoryRepo.GetOptionFilter();
             var status = new List<object>
                 {
                     new { Name = "Hoàn thành", Value = 2 },
                     new { Name = "Chưa hoàn thành", Value = 1 }
                 };
 
-            return _msgService.MsgReturn(0, "Trường tìm kiếm", new { cate, to, from, status });
+            return _msgService.MsgReturn(0, "Trường tìm kiếm", new { cate = optionFilter.Categories, to = optionFilter.To, from = optionFilter.From, status });
         }
 
         [HttpPut("{id}")]
@@ -129,12 +88,9 @@ namespace app.Controllers
                     EM = "Tên thể loại không được để trống!"
                 });
             }
-
-            _context.Entry(category).State = EntityState.Modified;
-
             try
             {
-                await _context.SaveChangesAsync();
+                await _categoryRepo.UpdateCategory(category);
             }
             catch
             {
@@ -152,17 +108,8 @@ namespace app.Controllers
             });
         }
 
-        public class addCategoryForm
-        {
-            public string? CategoryName { get; set; }
-
-            public string? CategoryBanner { get; set; }
-
-            public string? CategoryDescription { get; set; }
-        }
-
         [HttpPost("addCategory")]
-        public async Task<ActionResult> addCategory(addCategoryForm category)
+        public async Task<ActionResult> addCategory(addCategoryDto category)
         {
             if (category.CategoryName == "" || category.CategoryName == null )
             {
@@ -172,25 +119,25 @@ namespace app.Controllers
                     EM = "Tên thể loại không được để trống"
                 });
             }
-            if ((_context.Categories?.Any(e => e.CategoryName == category.CategoryName)).GetValueOrDefault())
-            {
-                return new JsonResult(new
-                {
-                    EC = -1,
-                    EM = "Thể loại đã tồn tại"
-                });
-            }
             try
             {
-                Category c = new Category()
+                bool result = await _categoryRepo.AddCategory(category);
+                if (result)
                 {
-                    CategoryName = category.CategoryName,
-                    CategoryBanner = category.CategoryBanner,
-                    CategoryDescription = category.CategoryDescription,
-                };
-                _context.Categories.Add(c);
-                await _context.SaveChangesAsync();
-
+                    return new JsonResult(new
+                    {
+                        EC = 0,
+                        EM = "Thêm thể loại thành công"
+                    });
+                }
+                else
+                {
+                    return new JsonResult(new
+                    {
+                        EC = -1,
+                        EM = "Thể loại đã tồn tại"
+                    });
+                }
             }
             catch
             {
@@ -200,13 +147,6 @@ namespace app.Controllers
                     EM = "Hệ thống xảy ra lỗi!"
                 });
             }
-
-
-            return new JsonResult(new
-            {
-                EC = 0,
-                EM = "Thêm thể loại thành công"
-            });
         }
 
     }

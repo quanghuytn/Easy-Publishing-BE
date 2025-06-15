@@ -1,6 +1,6 @@
-﻿namespace app.DTOs
+﻿namespace app.DTOs.Comment
 {
-    public class CommentDTO
+    public class SendCommentDto
     {
         public int? StoryId { get; set; }
 

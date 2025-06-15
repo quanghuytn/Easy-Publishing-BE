@@ -1,4 +1,6 @@
-﻿using app.Models;
+﻿using app.DTOs.Review;
+using app.Interface;
+using app.Models;
 using app.Service;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -14,76 +16,27 @@ namespace app.Controllers
     [ApiController]
     public class ReviewsController : ControllerBase
     {
+        private readonly IReviewRepository _reviewRepository;
+        private readonly IChapterRepository _chapterRepository;
         private readonly EasyPublishingContext _context;
         private MailService mailService = new MailService();
         private MsgService msgService = new MsgService();
         private int pagesize = 10;
 
-        public ReviewsController(EasyPublishingContext context, IConfiguration configuration)
+        public ReviewsController(EasyPublishingContext context, IReviewRepository reviewRepository, IChapterRepository chapterRepository)
         {
             _context = context;
-        }
-
-        public class ReviewForm
-        {
-            public int ChapterId { get; set; }
-
-            public bool SpellingError { get; set; }
-
-            public bool LengthError { get; set; }
-
-            public bool PoliticalContentError { get; set; }
-
-            public bool DistortHistoryError { get; set; }
-
-            public bool SecretContentError { get; set; }
-
-            public bool OffensiveContentError { get; set; }
-
-            public bool UnhealthyContentError { get; set; }
-
-            public string? ReviewContent { get; set; }
-        }
-
-        private JwtSecurityToken VerifyToken()
-        {
-            var tokenCookie = Request.Cookies["access_token"];
-            var tokenBearer = extractToken();
-            var handler = new JwtSecurityTokenHandler();
-            var jwtSecurityToken = handler.ReadJwtToken(!String.IsNullOrEmpty(tokenBearer) ? tokenBearer : tokenCookie);
-            return jwtSecurityToken;
-        }
-
-        private string extractToken()
-        {
-            if (!String.IsNullOrEmpty(Request.Headers.Authorization) &&
-                Request.Headers.Authorization.ToString().Split(' ')[0] == "Bearer" &&
-                !String.IsNullOrEmpty(Request.Headers.Authorization.ToString().Split(' ')[1]))
-            {
-                return Request.Headers.Authorization.ToString().Split(' ')[1];
-            }
-            return null;
-        }
-        private int GetUserId()
-        {
-            var jwtSecurityToken = new JwtSecurityToken();
-            int userId = 0;
-            try
-            {
-                jwtSecurityToken = VerifyToken();
-                userId = Int32.Parse(jwtSecurityToken.Claims.First(c => c.Type == "userId").Value);
-            }
-            catch (Exception) { }
-            return userId;
+            _reviewRepository = reviewRepository;
+            _chapterRepository = chapterRepository;
         }
 
         [Authorize(Roles = "Reviewer")]
         [HttpPost("send")]
-        public async Task<ActionResult> SendReview([FromBody] ReviewForm data)
+        public async Task<ActionResult> SendReview([FromBody] SendReviewDto data)
         {
             int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
-            var chapter = _context.Chapters.Where(c => c.ChapterId == data.ChapterId).FirstOrDefault();
+            var chapter = await _chapterRepository.GetChapter(data.ChapterId);
             if (chapter == null)
             {
                 return new JsonResult(new
@@ -101,7 +54,7 @@ namespace app.Controllers
                     EM = "Truyện của chương không tồn tại"
                 });
             }
-            var review = _context.Reviews.Where(r => r.ChapterId == data.ChapterId).FirstOrDefault();
+            var review = await _reviewRepository.GetReviewByChapter(data.ChapterId);
             if (review != null)
             {
                 return new JsonResult(new
@@ -152,23 +105,7 @@ namespace app.Controllers
 
             try
             {
-                // new review
-                Review newReview = new Review()
-                {
-                    UserId = userId,
-                    ChapterId = data.ChapterId,
-                    ReviewDate = DateTime.Now,
-                    SpellingError = data.SpellingError,
-                    LengthError = data.LengthError,
-                    PoliticalContentError = data.PoliticalContentError,
-                    DistortHistoryError = data.DistortHistoryError,
-                    SecretContentError = data.SecretContentError,
-                    OffensiveContentError = data.OffensiveContentError,
-                    UnhealthyContentError = data.UnhealthyContentError,
-                    ReviewContent = data.ReviewContent
-                };
-                _context.Reviews.Add(newReview);
-                await _context.SaveChangesAsync();
+                await _reviewRepository.SendReview(userId, data);
             }
             catch (Exception)
             {
@@ -210,7 +147,7 @@ namespace app.Controllers
         {
             int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
-            var chapter = _context.Chapters.Where(c => c.ChapterId == chapterId).FirstOrDefault();
+            var chapter = await _chapterRepository.GetChapter(chapterId); ;
             if (chapter == null)
             {
                 return new JsonResult(new
@@ -228,46 +165,7 @@ namespace app.Controllers
                     EM = "Truyện của chương không tồn tại"
                 });
             }
-            var review = _context.Reviews.Where(r => r.ChapterId == chapterId)
-                .Include(r => r.User)
-                .Include(r => r.Chapter)
-                .Select(r => new
-                {
-                    ReviewDate = r.ReviewDate,
-                    SpellingError = r.SpellingError,
-                    LengthError = r.LengthError,
-                    PoliticalContentError = r.PoliticalContentError,
-                    DistortHistoryError = r.DistortHistoryError,
-                    SecretContentError = r.SecretContentError,
-                    OffensiveContentError = r.OffensiveContentError,
-                    UnhealthyContentError = r.UnhealthyContentError,
-                    ReviewContent = r.ReviewContent,
-                    Chapters = new
-                    {
-                        r.Chapter.ChapterId,
-                        r.Chapter.ChapterNumber,
-                        r.Chapter.ChapterTitle,
-                        r.Chapter.ChapterPrice,
-                        r.Chapter.CreateTime,
-                        r.Chapter.ChapterContentMarkdown,
-                        r.Chapter.ChapterContentHtml
-                    },
-                    Reviewer = new
-                    {
-                        UserId = r.UserId,
-                        Email = r.User.Email,
-                        Username = r.User.Username,
-                        UserFullname = r.User.UserFullname,
-                        Gender = r.User.Gender == true ? "Male" : "Female",
-                        Dob = r.User.Dob,
-                        Address = r.User.Address,
-                        Phone = r.User.Phone,
-                        Status = r.User.Status == true ? "Active" : "Inactive",
-                        UserImage = r.User.UserImage,
-                        DescriptionMarkdown = r.User.DescriptionMarkdown,
-                        DescriptionHTML = r.User.DescriptionHtml,
-                    }
-                }).FirstOrDefault();
+            var review = await _reviewRepository.GetReviewDetail(chapterId);
             if (review == null)
             {
                 return new JsonResult(new
@@ -300,21 +198,7 @@ namespace app.Controllers
         {
             int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
-            var chapters = await _context.Chapters.Where(c => (c.Status == 0 || c.Status == null) && c.Story.AuthorId == userId)
-                .Select(c => new
-                {
-                    StoryId = c.StoryId,
-                    ChapterId = c.ChapterId,
-                    VolumeId = c.VolumeId,
-                    StoryTitle = c.Story.StoryTitle,
-                    VolumeTitle = c.Volume.VolumeTitle,
-                    VolumeNumber = c.Volume.VolumeNumber,
-                    ChapterTitle = c.ChapterTitle,
-                    ChapterNumber = c.ChapterNumber,
-                    CreateTime = c.CreateTime,
-                    Status = c.Status
-                }).OrderBy(v => v.CreateTime)
-                .ToListAsync();
+            var chapters = await _reviewRepository.GetChapterNotReviewOfAuthor(userId);
 
             page = page == null || page == 0 ? 1 : page;
             pageSize = pageSize == null || pageSize == 0 ? pagesize : pageSize;
@@ -328,21 +212,7 @@ namespace app.Controllers
         {
             int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
-            var chapters = await _context.Chapters.Where(c => c.Status == 0 && c.Story.AuthorId != userId)
-                .Select(c => new
-                {
-                    StoryId = c.StoryId,
-                    ChapterId = c.ChapterId,
-                    VolumeId = c.VolumeId,
-                    StoryTitle = c.Story.StoryTitle,
-                    VolumeTitle = c.Volume.VolumeTitle,
-                    VolumeNumber = c.Volume.VolumeNumber,
-                    ChapterTitle = c.ChapterTitle,
-                    ChapterNumber = c.ChapterNumber,
-                    CreateTime = c.CreateTime,
-                    Status = c.Status
-                }).OrderBy(v => v.CreateTime)
-                .ToListAsync();
+            var chapters = await _reviewRepository.GetChapterNotReview(userId);
 
             page = page == null || page == 0 ? 1 : page;
             pageSize = pageSize == null || pageSize == 0 ? pagesize : pageSize;
@@ -388,14 +258,14 @@ namespace app.Controllers
 
         [Authorize(Roles ="Reviewer")]
         [HttpGet("volume_list")]
-        public async Task<ActionResult> GetVolume(int storyid)
+        public async Task<ActionResult> GetVolume(int storyId)
         {
             int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
             var volumes = await _context.Volumes
                 .Include(v => v.Chapters)
                 .Include(v => v.Story)
-                .Where(v => v.StoryId == storyid && v.Story.AuthorId != userId && v.Chapters.Any(c => c.Status == 0))
+                .Where(v => v.StoryId == storyId && v.Story.AuthorId != userId && v.Chapters.Any(c => c.Status == 0))
                 .Select(v => new
                 {
                     volumeId = v.VolumeId,
