@@ -1,8 +1,6 @@
 ﻿using app.Interface;
-using app.Models;
 using app.Service;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace app.Controllers
 {

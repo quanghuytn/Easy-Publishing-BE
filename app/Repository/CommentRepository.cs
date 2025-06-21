@@ -59,7 +59,9 @@ namespace app.Repository
 
         public async Task<List<CommentDto>> GetChapterComments(int userId, int chapterId)
         {
-            var comments = await _context.Comments.Where(c => c.StoryId == chapterId)
+            var comments = await _context.Comments
+                .AsNoTracking()
+                .Where(c => c.StoryId == chapterId)
                .Include(c => c.User)
                .Select(c => new CommentDto
                {
@@ -76,7 +78,9 @@ namespace app.Repository
 
         public async Task<List<CommentDto>> GetStoryComments(int userId, int storyId)
         {
-            var comments = await _context.Comments.Where(c => c.StoryId == storyId)
+            var comments = await _context.Comments
+                .AsNoTracking()
+                .Where(c => c.StoryId == storyId)
                 .Include(c => c.User)
                 .Select(c => new CommentDto
                 {

@@ -16,7 +16,9 @@ namespace app.Repository
 
         public async Task<AuthorDto?> GetAuthorById(int authorId)
         {
-            var author = await _context.Users.Where(c => c.UserId == authorId)
+            var author = await _context.Users
+                .AsNoTracking()
+                .Where(c => c.UserId == authorId)
                 .Include(c => c.Stories)
                 .Select(c => new AuthorDto
                 {
@@ -33,8 +35,10 @@ namespace app.Repository
 
         public async Task<StoryRelateAuthorDto?> GetStoryRelateAuthor(int storyId)
         {
-            var story = await _context.Stories.FirstOrDefaultAsync(c => c.StoryId == storyId);
-            var author = await _context.Users.Where(c => c.UserId == story.AuthorId)
+            var story = await _context.Stories.AsNoTracking().FirstOrDefaultAsync(c => c.StoryId == storyId);
+            var author = await _context.Users
+                .AsNoTracking()
+                .Where(c => c.UserId == story.AuthorId)
                 .Include(c => c.Stories).ThenInclude(c => c.StoryInteraction)
                 .Select(c => new StoryRelateAuthorDto
                 {

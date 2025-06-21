@@ -2,6 +2,7 @@
 using app.Models;
 using app.Service;
 using Azure.Core;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -9,9 +10,11 @@ using OfficeOpenXml;
 using System.Drawing.Printing;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.NetworkInformation;
+using System.Security.Claims;
 
 namespace app.Controllers
 {
+    [Authorize]
     [Route("api/v1/tickets")]
     [ApiController]
     public class TicketsController : ControllerBase
@@ -34,59 +37,13 @@ namespace app.Controllers
             public string Location { get; set; }
             public string Time { get; set; }
         }
-        private JwtSecurityToken VerifyToken()
-        {
-            var tokenCookie = Request.Cookies["access_token"];
-            var tokenBearer = extractToken();
-            var handler = new JwtSecurityTokenHandler();
-            var jwtSecurityToken = handler.ReadJwtToken(!String.IsNullOrEmpty(tokenBearer) ? tokenBearer : tokenCookie);
-            return jwtSecurityToken;
-        }
 
-        private string extractToken()
-        {
-            if (!String.IsNullOrEmpty(Request.Headers.Authorization) &&
-                Request.Headers.Authorization.ToString().Split(' ')[0] == "Bearer" &&
-                !String.IsNullOrEmpty(Request.Headers.Authorization.ToString().Split(' ')[1]))
-            {
-                return Request.Headers.Authorization.ToString().Split(' ')[1];
-            }
-            return null;
-        }
-        private int GetUserId()
-        {
-            var jwtSecurityToken = new JwtSecurityToken();
-            int userId = 0;
-            try
-            {
-                jwtSecurityToken = VerifyToken();
-                userId = Int32.Parse(jwtSecurityToken.Claims.First(c => c.Type == "userId").Value);
-            }
-            catch (Exception) { }
-            return userId;
-        }
-
+        [Authorize(Roles = "Admin")]
         [HttpGet("all_ticket")]
         public async Task<ActionResult> GetAllTickets()
         {
-            int userId = GetUserId();
-            if (userId == 0)
-            {
-                return new JsonResult(new
-                {
-                    EC = -1,
-                    EM = "Yêu cầu đăng nhập"
-                });
-            };
-            var user = _context.Users.Where(u => u.UserId == userId).FirstOrDefault();
-            if (user.RoleId != 1)
-            {
-                return new JsonResult(new
-                {
-                    EC = 1,
-                    EM = "Không có quyền quản trị viên"
-                });
-            }
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
             var tickets = await _context.Tickets.Where(t => t.UserId > 0)
            .Include(t => t.User).OrderByDescending(t => t.TicketDate)
            .Select(t => new
@@ -124,19 +81,13 @@ namespace app.Controllers
             });
         }
 
+        [Authorize]
         [HttpPost("send")]
         public async Task<ActionResult> SendRequest()
         {
 
-            int userId = GetUserId();
-            if (userId == 0)
-            {
-                return new JsonResult(new
-                {
-                    EC = -1,
-                    EM = "Yêu cầu đăng nhập"
-                });
-            };
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
             var user = _context.Users.Include(u => u.Role).Where(u => u.UserId == userId).FirstOrDefault();
             if (user.RoleId == 3)
             {
@@ -182,28 +133,10 @@ namespace app.Controllers
             });
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost("invite_interview")]
         public async Task<ActionResult> ApproveRequest([FromBody] InviteForm data)
         {
-
-            int userId = GetUserId();
-            if (userId == 0)
-            {
-                return new JsonResult(new
-                {
-                    EC = -1,
-                    EM = "Login required"
-                });
-            };
-            var user = _context.Users.Where(u => u.UserId == userId).FirstOrDefault();
-            if (user.RoleId != 1)
-            {
-                return new JsonResult(new
-                {
-                    EC = 1,
-                    EM = "Not an administrator"
-                });
-            }
             if (string.IsNullOrEmpty(data.Location) || string.IsNullOrEmpty(data.Time))
             {
                 return new JsonResult(new
@@ -247,28 +180,10 @@ namespace app.Controllers
             });
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost("approve")]
         public async Task<ActionResult> ApproveRequest([FromBody] TicketForm data)
         {
-
-            int userId = GetUserId();
-            if (userId == 0)
-            {
-                return new JsonResult(new
-                {
-                    EC = -1,
-                    EM = "Login required"
-                });
-            };
-            var user = _context.Users.Where(u => u.UserId == userId).FirstOrDefault();
-            if (user.RoleId != 1)
-            {
-                return new JsonResult(new
-                {
-                    EC = 1,
-                    EM = "Not an administrator"
-                });
-            }
             var ticket = _context.Tickets.Where(t => t.TicketId == data.TicketId).FirstOrDefault();
             if (ticket.Status == true)
             {
@@ -324,28 +239,10 @@ namespace app.Controllers
             });
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost("deny")]
         public async Task<ActionResult> DenyRequest([FromBody] TicketForm data)
         {
-
-            int userId = GetUserId();
-            if (userId == 0)
-            {
-                return new JsonResult(new
-                {
-                    EC = -1,
-                    EM = "Login required"
-                });
-            };
-            var user = _context.Users.Where(u => u.UserId == userId).FirstOrDefault();
-            if (user.RoleId != 1)
-            {
-                return new JsonResult(new
-                {
-                    EC = 1,
-                    EM = "Not an administrator"
-                });
-            }
             var ticket = _context.Tickets.Where(t => t.TicketId == data.TicketId).FirstOrDefault();
             if (ticket.Status == true)
             {
@@ -419,8 +316,7 @@ namespace app.Controllers
         [HttpPost("refund_send")]
         public async Task<ActionResult> SendRefund([FromBody] Refund refund)
         {
-            int userId = GetUserId();
-            if (userId == 0) return _msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
             try
             {
@@ -455,14 +351,10 @@ namespace app.Controllers
             return _msgService.MsgActionReturn(0, "Yêu cầu rút tiền của bạn đã được gửi đi!");
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet("refunds")]
         public async Task<ActionResult> GetAllRefund()
         {
-            int userId = GetUserId();
-            if (userId == 0) return _msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
-            var admin = _context.Users.Where(u => u.UserId == userId).FirstOrDefault();
-            if (admin.RoleId != 1) return _msgService.MsgActionReturn(-1, "Không có quyền quản trị viên");
-
             var requests = await _context.RefundRequests.Where(c => c.Status == null)
            .Include(c => c.Wallet).ThenInclude(c => c.User)
            .Select(c => new
@@ -480,14 +372,10 @@ namespace app.Controllers
             return _msgService.MsgReturn(0, "Yêu cầu rút tiền", requests);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet("refund_export")]
         public async Task<ActionResult> ExportRefunds()
         {
-            int userId = GetUserId();
-            if (userId == 0) return _msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
-            var admin = _context.Users.Where(u => u.UserId == userId).FirstOrDefault();
-            if (admin.RoleId != 1) return _msgService.MsgActionReturn(-1, "Không có quyền quản trị viên");
-
             var request_exist = await _context.RefundRequests.Where(c => c.ResponseTime != null && c.Status == null)
                 .Include(c => c.Wallet).ThenInclude(c => c.User)
                 .Select(c => new
@@ -527,14 +415,10 @@ namespace app.Controllers
             return _msgService.MsgReturn(0, "Yêu cầu phê duyệt", ret);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet("refund_export2")]
         public async Task<ActionResult> ExportRefunds2()
         {
-            int userId = GetUserId();
-            if (userId == 0) return _msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
-            var admin = _context.Users.Where(u => u.UserId == userId).FirstOrDefault();
-            if (admin.RoleId != 1) return _msgService.MsgActionReturn(-1, "Không có quyền quản trị viên");
-
             var requests = await _context.RefundRequests
                .Where(c => c.ResponseTime == null && c.Status == null)
                .Include(c => c.Wallet).ThenInclude(c => c.User)
@@ -576,16 +460,10 @@ namespace app.Controllers
             return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Refund_Request.xlsx");
         }
 
-
+        [Authorize(Roles = "Admin")]
         [HttpPut("refund_approve")]
         public async Task<ActionResult> ApproveRefund()
         {
-
-            int userId = GetUserId();
-            var admin = _context.Users.Where(u => u.UserId == userId).FirstOrDefault();
-            if (userId == 0) return _msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
-            if (admin.RoleId != 1) return _msgService.MsgActionReturn(-1, "Không có quyền quản trị viên");
-
             var requests = await _context.RefundRequests.Where(c => c.ResponseTime != null && c.Status == null).ToListAsync();
             if (requests.Count() == 0) return _msgService.MsgActionReturn(-2, "Yêu cầu đã được phê duyệt rồi");
 

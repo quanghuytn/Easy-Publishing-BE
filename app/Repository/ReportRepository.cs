@@ -23,6 +23,7 @@ namespace app.Repository
         public async Task<List<ReportDetailDto>> GetAllReports()
         {
             var reports = await _context.ReportContents
+                .AsNoTracking()
                 .Include(r => r.ReportType)
                 .Include(r => r.Chapter)
                 .Include(r => r.Story)

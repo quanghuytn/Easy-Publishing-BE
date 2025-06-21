@@ -18,14 +18,14 @@ namespace app.Controllers
     {
         private readonly IReviewRepository _reviewRepository;
         private readonly IChapterRepository _chapterRepository;
-        private readonly EasyPublishingContext _context;
+        private readonly IStoryRepository _storyRepository;
         private MailService mailService = new MailService();
         private MsgService msgService = new MsgService();
         private int pagesize = 10;
 
-        public ReviewsController(EasyPublishingContext context, IReviewRepository reviewRepository, IChapterRepository chapterRepository)
+        public ReviewsController(IReviewRepository reviewRepository, IChapterRepository chapterRepository, IStoryRepository storyRepository)
         {
-            _context = context;
+            _storyRepository = storyRepository;
             _reviewRepository = reviewRepository;
             _chapterRepository = chapterRepository;
         }
@@ -45,7 +45,7 @@ namespace app.Controllers
                     EM = "Chương không tồn tại"
                 });
             }
-            var story = _context.Stories.Include(s => s.Author).Where(r => r.StoryId == chapter.StoryId).FirstOrDefault();
+            var story = await _storyRepository.GetStory(chapter.StoryId);
             if (story == null)
             {
                 return new JsonResult(new
@@ -147,7 +147,7 @@ namespace app.Controllers
         {
             int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
-            var chapter = await _chapterRepository.GetChapter(chapterId); ;
+            var chapter = await _chapterRepository.GetChapter(chapterId);
             if (chapter == null)
             {
                 return new JsonResult(new
@@ -156,7 +156,7 @@ namespace app.Controllers
                     EM = "Chương không tồn tại"
                 });
             }
-            var story = _context.Stories.Include(s => s.Author).Where(r => r.StoryId == chapter.StoryId).FirstOrDefault();
+            var story = await _storyRepository.GetStory(chapter.StoryId);
             if (story == null)
             {
                 return new JsonResult(new
@@ -226,30 +226,7 @@ namespace app.Controllers
         {
             int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
-            var stories = await _context.Stories
-                .Include(s => s.Categories)
-                .Include(s => s.Users)
-                .Include(s => s.Chapters).ThenInclude(c => c.Users)
-                .Include(s => s.StoryInteraction)
-                .Where(s => s.Chapters.Any(c => c.Status == 0) && s.AuthorId != userId)
-                .Select(s => new
-                {
-                    StoryId = s.StoryId,
-                    StoryTitle = s.StoryTitle,
-                    StoryImage = s.StoryImage,
-                    StoryCreateTime = s.CreateTime,
-                    StoryStatus = s.Status,
-                    StoryInteraction = new
-                    {
-                        s.StoryInteraction.Like,
-                        s.StoryInteraction.Follow,
-                        s.StoryInteraction.View,
-                        s.StoryInteraction.Read,
-                    },
-                    UserPurchaseStory = s.Users.Count,
-                    UserPurchaseChapter = s.Chapters.SelectMany(c => c.Users).Count(),
-                })
-                .ToListAsync();
+            var stories = await _reviewRepository.GetStoryReview(userId);
             page = page == null || page == 0 ? 1 : page;
             pageSize = pageSize == null || pageSize == 0 ? pagesize : pageSize;
             return msgService.MsgPagingReturn("Danh sách truyện có chương cần review",
@@ -262,28 +239,7 @@ namespace app.Controllers
         {
             int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
-            var volumes = await _context.Volumes
-                .Include(v => v.Chapters)
-                .Include(v => v.Story)
-                .Where(v => v.StoryId == storyId && v.Story.AuthorId != userId && v.Chapters.Any(c => c.Status == 0))
-                .Select(v => new
-                {
-                    volumeId = v.VolumeId,
-                    volumeNumber = v.VolumeNumber,
-                    VolumeTitle = v.VolumeTitle,
-                    StoryId = v.StoryId,
-                    CreateTime = v.CreateTime,
-                    Chapters = v.Chapters.Where(c => c.Status == 0).Select(c => new
-                    {
-                        c.ChapterId,
-                        c.Status,
-                        c.ChapterNumber,
-                        c.ChapterTitle,
-                        c.ChapterPrice,
-                        c.CreateTime,
-                    }).OrderBy(c => c.ChapterNumber).ToList()
-                }).OrderBy(v => v.volumeNumber)
-                .ToListAsync();
+            var volumes = await _reviewRepository.GetVolumeReview(storyId, userId);
             if (volumes.Count() == 0)
             {
                 return msgService.MsgActionReturn(2, "Không có tập chứa chương cần review");
@@ -291,29 +247,16 @@ namespace app.Controllers
             return msgService.MsgReturn(0, "Danh sách các tập của truyện", volumes);
         }
 
-        [Authorize(Roles ="Reviewer")]
+        [Authorize(Roles = "Reviewer")]
         [HttpGet("chapter_information")]
         public async Task<ActionResult> GetChapterInfor(int chapterId)
         {
-            var chapter = _context.Chapters.Where(c => c.ChapterId == chapterId).Select(c => new
-            {
-                chapterId = c.ChapterId,
-                chapterStatus = c.Status,
-                storyId = c.Story.StoryId,
-                storyTitle = c.Story.StoryTitle,
-                ChapterTitle = c.ChapterTitle,
-                chapterContentHtml = c.ChapterContentHtml,
-                ChapterContentMarkdown = c.ChapterContentMarkdown,
-                ChapterNumber = c.ChapterNumber,
-                volumeId = c.VolumeId,
-                chapterPrice = c.ChapterPrice,
-
-            }).FirstOrDefault();
+            var chapter = await _reviewRepository.GetChapterInformationReview(chapterId);
             if (chapter == null)
             {
                 return msgService.MsgActionReturn(3, "Chương không tồn tại");
             }
-            if (chapter.chapterStatus != 0)
+            if (chapter.ChapterStatus != 0)
             {
                 return msgService.MsgActionReturn(4, "Chương đã được review");
             }
@@ -324,40 +267,8 @@ namespace app.Controllers
         [HttpGet("story_admin")]
         public async Task<ActionResult> GetStoriesAdmin()
         {
-            
-            var stories = await _context.Stories
-                .Include(s => s.Author)
-                .Include(s => s.Volumes).ThenInclude(v => v.Chapters)
-                .Where(s => s.Chapters.Any(c => c.Status == 0))
-                .Select(s => new
-                {
-                    tt_key = s.StoryId + 0.1,
-                    tt_parent = 0,
-                    StoryId = s.StoryId,
-                    Title = s.StoryTitle,
-                    CreateTime = s.CreateTime.ToString("yyyy-MM-dd HH:mm:ss"),
-                    Status = s.Status,
-                    Author = s.Author.Username,
-                    Volumes = s.Volumes.Where(v => v.StoryId == s.StoryId && v.Chapters.Any(c => c.Status == 0)).Select(v => new
-                    {
-                        tt_key = v.VolumeId + 0.2,
-                        tt_parent = v.StoryId + 0.1,
-                        VolumeId = v.VolumeId,
-                        VolumeNumber = v.VolumeNumber,
-                        Title = "Volume " + v.VolumeNumber + ": " + v.VolumeTitle,
-                        CreateTime = v.CreateTime.ToString("yyyy-MM-dd HH:mm:ss"),
-                        Chapters = v.Chapters.Where(c => c.VolumeId == v.VolumeId && c.Status == 0).Select(c => new
-                        {
-                            tt_key = c.ChapterId,
-                            tt_parent = c.VolumeId + 0.2,
-                            ChapterId = c.ChapterId,
-                            ChapterNumber = c.ChapterNumber,
-                            Title = "Chaper " + c.ChapterNumber + ": " + c.ChapterTitle,
-                            CreateTime = c.CreateTime.ToString("yyyy-MM-dd HH:mm:ss")
-                        }).OrderBy(c => c.ChapterNumber).ToList()
-                    }).OrderBy(v => v.VolumeNumber).ToList()
-                })
-                .ToListAsync();
+
+            var stories = await _reviewRepository.GetStoryReviewAdmin();
             return msgService.MsgReturn(0, "Danh sách truyện có chương cần review",
                 new
                 {

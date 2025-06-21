@@ -48,26 +48,6 @@ namespace app.Controllers
             public string Signature { get; set; } = "EP";
         }
 
-        private JwtSecurityToken VerifyToken()
-        {
-            var tokenCookie = Request.Cookies["access_token"];
-            var tokenBearer = extractToken();
-            var handler = new JwtSecurityTokenHandler();
-            var jwtSecurityToken = handler.ReadJwtToken(!String.IsNullOrEmpty(tokenBearer) ? tokenBearer : tokenCookie);
-            return jwtSecurityToken;
-        }
-
-        private string extractToken()
-        {
-            if (!String.IsNullOrEmpty(Request.Headers.Authorization) &&
-                Request.Headers.Authorization.ToString().Split(' ')[0] == "Bearer" &&
-                !String.IsNullOrEmpty(Request.Headers.Authorization.ToString().Split(' ')[1]))
-            {
-                return Request.Headers.Authorization.ToString().Split(' ')[1];
-            }
-            return null;
-        }
-
         [HttpGet("getTodayRevenue")]
         public async Task<ActionResult> getTodayRevenue()
         {
@@ -366,7 +346,7 @@ namespace app.Controllers
             try
             {
                 int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
-                if (userId == 0) return _msgService.MsgActionReturn(-1, "Yêu cầu đăng nhập");
+
                 var user = await _context.Users.Where(u => u.UserId == userId).FirstOrDefaultAsync();
                 if (chapterStart > chapterEnd)
                     return _msgService.MsgActionReturn(-3, "Chương bắt đầu cần lớn hơn chương cuối bạn muốn mua");

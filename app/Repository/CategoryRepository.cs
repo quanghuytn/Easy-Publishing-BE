@@ -50,6 +50,7 @@ namespace app.Repository
             if (cate is null)
             {
                 cate = await _context.Categories
+                .AsNoTracking()
                 .Include(c => c.Stories)
                 .Select(c => new CategoryDto    
                 {

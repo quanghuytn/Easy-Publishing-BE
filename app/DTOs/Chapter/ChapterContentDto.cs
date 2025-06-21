@@ -19,7 +19,7 @@ namespace app.DTOs.Chapter
         public bool Owned { get; set; }
         public bool UserLike { get; set; }
         public StoryChapterDto? Story { get; set; }
-        public ChapterAuthorDto? Author { get; set; }
+        public MinimalAuthorDto? Author { get; set; }
 
     }
 }

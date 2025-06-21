@@ -88,7 +88,9 @@ namespace app.Repository
 
         public async Task<ChapterDto?> GetChapterInfor(int chapterId)
         {
-            var chapter = await _context.Chapters.Where(c => c.ChapterId == chapterId).Select(c => new ChapterDto
+            var chapter = await _context.Chapters
+                .AsNoTracking()
+                .Where(c => c.ChapterId == chapterId).Select(c => new ChapterDto
             {
                 ChapterId = c.ChapterId,
                 StoryId = c.Story.StoryId,
@@ -107,7 +109,9 @@ namespace app.Repository
 
         public async Task<List<MinimalChapterDto>> GetStoryChapters(int storyId)
         {
-            var chapters = await _context.Chapters.Where(c => c.StoryId == storyId && c.Status > 0)
+            var chapters = await _context.Chapters
+                .AsNoTracking()
+                .Where(c => c.StoryId == storyId && c.Status > 0)
                 .Include(c => c.Comments)
                 .Include(c => c.Users)
                 .Select(c => new MinimalChapterDto
@@ -127,7 +131,9 @@ namespace app.Repository
 
         public async Task<List<VolumeChapterDto>> GetVolumes(int storyId)
         {
-            var volumes = await _context.Volumes.Where(v => v.StoryId == storyId)
+            var volumes = await _context.Volumes
+                .AsNoTracking()
+                .Where(v => v.StoryId == storyId)
                 .Include(v => v.Chapters)
                 .Select(v => new VolumeChapterDto
                 {
@@ -152,7 +158,9 @@ namespace app.Repository
 
         public async Task<List<VolumeDto>> GetVolumesByStory(int storyId)
         {
-            var volumes = await _context.Volumes.Where(v => v.StoryId == storyId)
+            var volumes = await _context.Volumes
+                .AsNoTracking()
+                .Where(v => v.StoryId == storyId)
                 .Select(v => new VolumeDto
                 {
                     VolumeId = v.VolumeId,
@@ -262,6 +270,7 @@ namespace app.Repository
             long prevChapterNum = PreviousChapter(chapterNumber, storyId);
 
             var chapter = await _context.Chapters
+                .AsNoTracking()
                 .Where(c => c.StoryId == storyId && c.ChapterNumber == chapterNumber && c.Status > 0)
                 .Include(c => c.Story)
                 .Include(c => c.Comments)
@@ -269,7 +278,7 @@ namespace app.Repository
                 .Select(c => new ChapterContentDto
                 {
                     Story = new StoryChapterDto { StoryId= c.StoryId, StoryTitle = c.Story.StoryTitle, StoryPrice = c.Story.StoryPrice },
-                    Author = new ChapterAuthorDto { UserId = c.Story.Author.UserId, UserFullname = c.Story.Author.UserFullname },
+                    Author = new MinimalAuthorDto { UserId = c.Story.Author.UserId, UserFullname = c.Story.Author.UserFullname },
                     Content = (c.ChapterPrice == 0 || c.ChapterPrice == null || userId == c.Story.Author.UserId || CheckPurchase(userId, chapterNumber, storyId)) ? c.ChapterContentHtml : null,
                     ChapterId = c.ChapterId,
                     ChapterNumber = c.ChapterNumber,

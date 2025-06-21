@@ -46,7 +46,9 @@ namespace app.Repository
 
         public async Task<List<ChapterInteractionDto>> GetStoryChaptersInteraction(int storyId)
         {
-            var storyChapters = await _context.Chapters.Where(c => c.StoryId == storyId)
+            var storyChapters = await _context.Chapters
+                .AsNoTracking()
+                .Where(c => c.StoryId == storyId)
                .OrderBy(c => c.ChapterId)
                .Include(c => c.Users)
                .Include(c => c.Comments)
