@@ -1,17 +1,10 @@
 ﻿using app.DTOs.Chapter;
 using app.Interface;
-using app.Models;
 using app.Service;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.VisualBasic;
-using System.Drawing.Printing;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Xml.Linq;
 
 namespace app.Controllers
 {
@@ -261,7 +254,7 @@ namespace app.Controllers
             });
         }
 
-        [HttpGet("chapter_content/{storyid}/{chapterNumber}")]
+        [HttpGet("chapter_content/{storyId}/{chapterNumber}")]
         public async Task<ActionResult> GetChapterContent(long chapterNumber, int storyId)
         {
             int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");

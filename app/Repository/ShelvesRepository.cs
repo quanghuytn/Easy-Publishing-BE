@@ -219,6 +219,95 @@ namespace app.Repository
             return stories;
         }
 
+        public async Task<List<TopSaleDto>> GetTop6StoriesSale()
+        {
+            var topStories = await _context.Transactions
+                                .AsNoTracking()
+                                .Where(t => t.StoryId != null)
+                                .GroupBy(t => t.StoryId)
+                                .Select(g => new
+                                {
+                                    StoryId = g.Key.Value,
+                                    Revenue = g.Sum(t => t.Amount)
+                                })
+                                .OrderByDescending(g => g.Revenue)
+                                .Take(6)
+                                .Select(g => new TopSaleDto
+                                {
+                                    Story = _context.Stories.Where(s => s.StoryId == g.StoryId).Select(s => new StorySaleInforDto
+                                    {
+                                        StoryId = s.StoryId,
+                                        StoryTitle = s.StoryTitle,
+                                        StoryImage = s.StoryImage,
+                                        AuthorName = s.Author.UserFullname
+                                    }).FirstOrDefault(),
+                                    Revenue = g.Revenue * 1000
+                                })
+                                .ToListAsync();
+            return topStories;
+        }
 
+        public async Task<List<TopAuthorRevenueDto>> GetTop6AuthorRevenue()
+        {
+            var topAuthors = await _context.Transactions
+                                 .Where(t => t.WalletId != null)
+                                 .GroupBy(t => t.WalletId)
+                                 .Select(g => new
+                                 {
+                                     WalletId = g.Key,
+                                     Revenue = g.Sum(t => t.Amount)
+                                 })
+                                 .OrderByDescending(g => g.Revenue)
+                                 .Take(6)
+                                 .Select(g => new TopAuthorRevenueDto
+                                 {
+                                     Author = _context.Wallets.Where(w => w.WalletId == g.WalletId).Select(a => new TopAuthorDto
+                                     {
+                                         AuthorFullname = a.User.UserFullname,
+                                         AuthorEmail = a.User.Email,
+                                         AuthorImage = a.User.UserImage
+                                     }).FirstOrDefault(),
+                                     Revenue = g.Revenue * 1000
+                                 })
+                                 .ToListAsync();
+            return topAuthors;
+        }
+
+        public async Task<List<TopLatestStoryDto>> GetTopLatestStories()
+        {
+            var stories = await _context.Stories
+                .AsNoTracking()
+                .Where(c => c.Status > 0)
+                .Include(c => c.Author)
+                .Include(c => c.Categories)
+                .Include(c => c.Chapters)
+                .OrderByDescending(c => c.StoryId)
+                .Select(s => new TopLatestStoryDto
+                {
+                    StoryId = s.StoryId,
+                    StoryTitle = s.StoryTitle,
+                    StoryImage = s.StoryImage,
+                    StoryDescription = s.StoryDescription,
+                    StoryDescriptionHtml = s.StoryDescriptionHtml,
+                    StoryDescriptionMarkdown = s.StoryDescriptionMarkdown,
+                    StoryCategories = s.Categories.Select(c => new CategoryShelfDto
+                    {
+                        CategoryId = c.CategoryId,
+                        CategoryName = c.CategoryName
+                    }).ToList(),
+                    StoryAuthor = new MinimalAuthorDto { UserId = s.Author.UserId, UserFullname = s.Author.UserFullname },
+                    StoryCreateTime = s.CreateTime,
+                    StoryChapterNumber = s.Chapters.Count,
+                    StoryLatestChapter = s.Chapters.Where(c => c.Status > 0).OrderByDescending(c => c.ChapterNumber).Select(c => new ChapterShelfDto
+                    {
+                        ChapterId = c.ChapterId,
+                        ChapterNumber = c.ChapterNumber,
+                        ChapterTitle = c.ChapterTitle,
+                        CreateTime = c.CreateTime
+                    }).FirstOrDefault(),
+                })
+                .ToListAsync();
+            return stories;
+        }
     }
 }

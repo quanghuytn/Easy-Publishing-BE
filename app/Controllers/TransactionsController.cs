@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
 namespace app.Controllers
@@ -918,6 +917,68 @@ namespace app.Controllers
                 {
                     paymentUrl = paymentUrl
                 }
+            });
+        }
+
+        [HttpPost("notify")]
+        public async Task<IActionResult> Notify([FromBody] MomoIPNRequest data)
+        {
+            try
+            {
+                if (data.ResultCode == 0)
+                {
+                    var amount = data.Amount;
+                    int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+                    var user = await _context.Users.Where(u => u.UserId == userId).FirstOrDefaultAsync();
+                    var user_wallet = await _context.Wallets.Where(w => w.UserId == user.UserId).FirstOrDefaultAsync();
+                    var user_transaction = new Transaction
+                    {
+                        WalletId = user_wallet.WalletId,
+                        Amount = amount,
+                        FundBefore = user_wallet.Fund,
+                        FundAfter = user_wallet.Fund + amount,
+                        RefundBefore = 0,
+                        RefundAfter = 0,
+                        TransactionTime = DateTime.Now,
+                        Status = true,
+                        Description = $"Nạp {amount}000 VND"
+                    };
+                    user_wallet.Fund = user_wallet.Fund + amount;
+
+                    var admin_wallet = await _context.Wallets.FirstOrDefaultAsync();
+                    var admin_transaction = new Transaction
+                    {
+                        WalletId = admin_wallet.WalletId,
+                        Amount = amount,
+                        FundBefore = 0,
+                        FundAfter = 0,
+                        RefundBefore = admin_wallet.Refund,
+                        RefundAfter = admin_wallet.Refund + amount,
+                        TransactionTime = DateTime.Now,
+                        Status = true,
+                        Description = $"Nạp {amount}000 VND vào hệ thống"
+                    };
+                    admin_wallet.Fund = admin_wallet.Fund + amount;
+
+                    _context.Entry<Wallet>(user_wallet).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
+                    _context.Entry<Wallet>(admin_wallet).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
+                    _context.Transactions.Add(user_transaction);
+                    _context.Transactions.Add(admin_transaction);
+                    await _context.SaveChangesAsync();
+                }
+            }
+            catch (Exception)
+            {
+                return new JsonResult(new
+                {
+                    EC = 1,
+                    EM = "Hệ thống xảy ra lỗi"
+                });
+            }
+            return new JsonResult(new
+            {
+                EC = 1,
+                EM = "Nạp tiền thành công"
             });
         }
     }

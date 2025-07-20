@@ -53,28 +53,7 @@ namespace app.Controllers
         [HttpGet("top6_sale")]
         public async Task<ActionResult> GetTop6StoriesSale()
         {
-            var topStories = _context.Transactions
-                                .Where(t => t.StoryId != null)
-                                .GroupBy(t => t.StoryId)
-                                .Select(g => new
-                                {
-                                    StoryId = g.Key.Value,
-                                    Revenue = g.Sum(t => t.Amount)
-                                })
-                                .OrderByDescending(g => g.Revenue)
-                                .Take(6)
-                                .Select(g => new
-                                {
-                                    story = _context.Stories.Where(s => s.StoryId == g.StoryId).Select(s => new
-                                    {
-                                        storyId = s.StoryId,
-                                        storyTitle = s.StoryTitle,
-                                        storyImage = s.StoryImage,
-                                        authorName = s.Author.UserFullname
-                                    }).FirstOrDefault(),
-                                    Revenue = g.Revenue*1000
-                                })
-                                .ToList();
+            var topStories = await _shelvesRepository.GetTop6StoriesSale();
 
             return _msgService.MsgReturn(0, "Top 6 truyện doanh thu cao nhất", topStories);
         }
@@ -82,27 +61,7 @@ namespace app.Controllers
         [HttpGet("top6_authorRevenue")]
         public async Task<ActionResult> GetTop6AuthorRevenue()
         {
-            var topAuthors = await _context.Transactions
-                                 .Where(t => t.WalletId != null)
-                                 .GroupBy(t => t.WalletId)
-                                 .Select(g => new
-                                 {
-                                     WalletId = g.Key,
-                                     Revenue = g.Sum(t => t.Amount)
-                                 })
-                                 .OrderByDescending(g => g.Revenue)
-                                 .Take(6)
-                                 .Select(g => new
-                                 {
-                                     Author = _context.Wallets.Where(w => w.WalletId == g.WalletId).Select(a => new
-                                     {
-                                         AuthorFullname = a.User.UserFullname,
-                                         AuthorEmail = a.User.Email,
-                                         AuthorImage = a.User.UserImage
-                                     }).FirstOrDefault(),
-                                     Revenue = g.Revenue * 1000
-                                 })
-                                 .ToListAsync();
+            var topAuthors = await _shelvesRepository.GetTop6AuthorRevenue();
 
             return _msgService.MsgReturn(0, "Top 6 tác giả kiếm được nhiều tiền nhất", topAuthors);
         }
@@ -132,32 +91,7 @@ namespace app.Controllers
         [EnableQuery]
         public async Task<ActionResult> GetTopLatestStories(int page)
         {
-            var stories = await _context.Stories.Where(c => c.Status > 0)
-                .Include(c => c.Author)
-                .Include(c => c.Categories)
-                .Include(c => c.Chapters)
-                .OrderByDescending(c => c.StoryId) // newest by id
-                .Select(s => new
-                {
-                    StoryId = s.StoryId,
-                    StoryTitle = s.StoryTitle,
-                    StoryImage = s.StoryImage,
-                    StoryDescription = s.StoryDescription,
-                    StoryDescriptionHtml = s.StoryDescriptionHtml,
-                    StoryDescriptionMarkdown = s.StoryDescriptionMarkdown,
-                    StoryCategories = s.Categories.ToList(),
-                    StoryAuthor = new { s.Author.UserId, s.Author.UserFullname },
-                    StoryCreateTime = s.CreateTime,
-                    StoryChapterNumber = s.Chapters.Count,
-                    StoryLatestChapter = s.Chapters.Where(c => c.Status > 0).OrderByDescending(c => c.ChapterNumber).FirstOrDefault() == null ? null :
-                    new
-                    {
-                        s.Chapters.Where(c => c.Status > 0).OrderByDescending(c => c.ChapterNumber).FirstOrDefault().ChapterId,
-                        s.Chapters.Where(c => c.Status > 0).OrderByDescending(c => c.ChapterNumber).FirstOrDefault().ChapterNumber,
-                        s.Chapters.Where(c => c.Status > 0).OrderByDescending(c => c.ChapterNumber).FirstOrDefault().ChapterTitle,
-                        s.Chapters.Where(c => c.Status > 0).OrderByDescending(c => c.ChapterNumber).FirstOrDefault().CreateTime
-                    },
-                }).ToListAsync();
+            var stories = await _shelvesRepository.GetTopLatestStories();
             return _msgService.MsgPagingReturn("Truyện mới thêm",
                stories.Skip(pagesize * (page - 1)).Take(pagesize), page, pagesize, stories.Count);
         }

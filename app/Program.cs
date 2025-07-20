@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 using app.Interface;
 using app.Repository;
 using app.Service;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
@@ -68,46 +69,47 @@ builder.Services.AddAuthentication(options =>
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true
     };
-    
+
     options.Events = new JwtBearerEvents
     {
-        OnAuthenticationFailed = context =>
-        {
-            var result = new JsonResult(new
-            {
-                EC = -1,
-                EM = "Yêu cầu đăng nhập",
-            })
-            {
-                StatusCode = StatusCodes.Status401Unauthorized
-            };
-
-
-            return result.ExecuteResultAsync(new ActionContext
-            {
-                HttpContext = context.HttpContext,
-                RouteData = new RouteData(),
-            });
-        },
-        
-        OnChallenge = context =>
+        OnChallenge = async context =>
         {
             context.HandleResponse();
-            var result = new JsonResult(new
+            if(context.Response.StatusCode != StatusCodes.Status401Unauthorized)
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            }
+
+            var result = new
             {
                 EC = -1,
-                EM = "Yêu cầu đăng nhập", 
-            })
-            {
-                StatusCode = StatusCodes.Status401Unauthorized
+                EM = "Yêu cầu đăng nhập"
             };
 
-     
-            return result.ExecuteResultAsync(new ActionContext
+            var jsonOptions = new JsonSerializerOptions
             {
-                HttpContext = context.HttpContext,
-                RouteData = new RouteData(),
-            });
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase // Áp dụng camelCase
+            };
+
+            await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(result, jsonOptions));
+        },
+        OnAuthenticationFailed = async context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            context.Response.ContentType = "application/json";
+
+            var result = new
+            {
+                EC = -1,
+                EM = "Yêu cầu đăng nhập"
+            };
+
+            var jsonOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase // Áp dụng camelCase
+            };
+
+            await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(result, jsonOptions));
         }
     };
 });
@@ -149,11 +151,11 @@ builder.Services.AddAuthorization();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+//if (app.Environment.IsDevelopment())
+//{
+app.UseSwagger();
+app.UseSwaggerUI();
+//}
 
 app.MapControllerRoute(
     name: "default",

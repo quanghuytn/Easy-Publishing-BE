@@ -1,7 +1,4 @@
 ﻿using app.DTOs.Story;
-using app.Models;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Distributed;
 using NRedisStack.RedisStackCommands;
 using NRedisStack.Search;
 using StackExchange.Redis;

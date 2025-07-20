@@ -56,7 +56,9 @@ namespace app.Repository
 
         public async Task<List<ChapterReviewDto>> GetChapterNotReviewOfAuthor(int authorId)
         {
-            var chapters = await _context.Chapters.AsNoTracking().Where(c => (c.Status == 0 || c.Status == null) && c.Story.AuthorId == authorId)
+            var chapters = await _context.Chapters
+                .AsNoTracking()
+                .Where(c => (c.Status == 0 || c.Status == null) && c.Story.AuthorId == authorId)
                .Select(c => new ChapterReviewDto
                {
                    StoryId = c.StoryId,

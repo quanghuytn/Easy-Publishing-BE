@@ -1,12 +1,7 @@
 ﻿using app.Interface;
-using app.Models;
 using app.Service;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Drawing.Printing;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
 namespace app.Controllers

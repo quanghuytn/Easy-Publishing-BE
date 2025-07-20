@@ -1,16 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
 using app.Models;
-using NuGet.Common;
 using app.Service;
-using System.Drawing.Printing;
-using app.Service.Caching;
-using Microsoft.AspNetCore.Authorization;
 using app.Interface;
 using app.DTOs.Category;
 

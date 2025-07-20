@@ -1,22 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using app.Models;
 using app.Service;
-using System.Security.Policy;
-using System.IdentityModel.Tokens.Jwt;
-using System.Drawing.Printing;
-using Microsoft.VisualBasic;
-using static app.Controllers.StoriesController;
-using Humanizer;
 using app.Service.Caching;
-using app.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using app.DTOs.Story;
 
 namespace app.Controllers
 {
@@ -76,13 +65,13 @@ namespace app.Controllers
             return _msgService.MsgReturn(0, "Thông tin truyện", stories);
         }
 
-        [Authorize]
         [HttpGet("story_detail")]
         public async Task<ActionResult> GetStoryDetail(int storyId)
         {
-            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
+            int userId = 2;
 
-            var stories = await _context.Stories.Where(c => c.StoryId == storyId && c.Status > 0)
+            var lastReadChapterNumber = await GetLastestChapterUserRead(storyId, userId);
+            var story = await _context.Stories.Where(c => c.StoryId == storyId && c.Status > 0)
                         .Include(c => c.Author).Include(c => c.StoryInteraction)
                         .Include(c => c.Categories)
                         .Include(c => c.Users) // luot mua truyen
@@ -114,17 +103,29 @@ namespace app.Controllers
                             StoryInteraction = c.StoryInteraction,
                             AuthorOwned = userId == c.AuthorId ? true : false,
                             UserOwned = c.Users.Any(c => c.UserId == userId),
+                            LastReadChapter = lastReadChapterNumber,
                             UserFollow = c.StoryFollowLikes.Any(c => c.UserId == userId && c.Follow == true),
                             UserLike = c.StoryFollowLikes.Any(c => c.UserId == userId && c.Like == true),
                         })
-                        .ToListAsync();
+                        .FirstOrDefaultAsync();
 
             var story_interaction = await _context.StoryInteractions.FirstOrDefaultAsync(c => c.StoryId == storyId);
             story_interaction.View += 1;
             _context.Entry(story_interaction).State = EntityState.Modified;
             await _context.SaveChangesAsync();
 
-            return _msgService.MsgReturn(0, "Thông tin truyện", stories.FirstOrDefault());
+            return _msgService.MsgReturn(0, "Thông tin truyện", story);
+        }
+
+        private async Task<long> GetLastestChapterUserRead(int storyId, int userId)
+        {
+            if (userId == 0) return 1;
+            var lastReadChapter = await _context.StoryReads.Where(sr => sr.UserId == userId && sr.StoryId == storyId)
+                                            .OrderByDescending(sr => sr.ReadTime)
+                                            .Select(sr => sr.Chapter)
+                                            .FirstOrDefaultAsync();
+            var chapterNumber = lastReadChapter?.ChapterNumber ?? 1;
+            return chapterNumber;
         }
 
         [HttpGet("story_detail/related")]
@@ -326,27 +327,9 @@ namespace app.Controllers
             return _msgService.MsgReturn(0, "Story Detail", story);
         }
 
-        public class AddStoryForm
-        {
-            public string StoryTitle { get; set; } = null!;
-            public int AuthorId { get; set; }
-            public string? StoryDescription { get; set; }
-            public string? StoryDescriptionMarkdown { get; set; }
-            public string? StoryDescriptionHtml { get; set; }
-
-            public string? StoryImage { get; set; }
-            public List<int> CategoryIds { get; set; }
-        }
-
-        public class GetStoryImageForm
-        {
-            public IFormFile image { get; set; }
-
-            public string? previousImage { get; set; }
-        }
-
+        [Authorize]
         [HttpPut("upload_image")]
-        public IActionResult GetImage([FromForm] GetStoryImageForm data)
+        public IActionResult GetImage([FromForm] GetStoryImageDto data)
         {
             string fileUploaded = "";
             try
@@ -407,7 +390,7 @@ namespace app.Controllers
         }
 
         [HttpPost("save_story")]
-        public async Task<ActionResult> SaveStory(AddStoryForm addStoryForm)
+        public async Task<ActionResult> SaveStory(AddStoryDto addStoryForm)
         {
             try
             {
@@ -441,27 +424,9 @@ namespace app.Controllers
             });
         }
 
-        public class SaveStoryForm
-        {
-            public int StoryId { get; set; }
-            public string StoryTitle { get; set; } = null!;
-            public decimal StoryPrice { get; set; }
-
-            public decimal? StorySale { get; set; }
-
-            public string? StoryImage { get; set; }
-
-            public string? StoryDescription { get; set; }
-            public string? StoryDescriptionMarkdown { get; set; }
-
-            public string? StoryDescriptionHtml { get; set; }
-            public int Status { get; set; }
-            public List<int> CategoryIds { get; set; }
-
-        }
-
+        [Authorize]
         [HttpPut("update_story")]
-        public async Task<ActionResult> EditStory(SaveStoryForm story)
+        public async Task<ActionResult> EditStory(UpdateStoryDto story)
         {
             int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
 
@@ -604,14 +569,9 @@ namespace app.Controllers
                 EM = "Xóa truyện thành công"
             });
         }
-        public class StoryImageForm
-        {
-            public int storyId { get; set; }
-            public IFormFile image { get; set; }
-        }
 
         [HttpPut("update_storyimage")]
-        public IActionResult ChangeAvatar([FromForm] StoryImageForm data)
+        public IActionResult ChangeAvatar([FromForm] StoryImageDto data)
         {
             string fileUploaded = "";
             try

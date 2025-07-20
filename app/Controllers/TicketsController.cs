@@ -1,15 +1,9 @@
-﻿using app.DTOs;
-using app.Models;
+﻿using app.Models;
 using app.Service;
-using Azure.Core;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
-using System.Drawing.Printing;
-using System.IdentityModel.Tokens.Jwt;
-using System.Net.NetworkInformation;
 using System.Security.Claims;
 
 namespace app.Controllers
