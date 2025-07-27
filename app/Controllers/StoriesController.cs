@@ -68,7 +68,7 @@ namespace app.Controllers
         [HttpGet("story_detail")]
         public async Task<ActionResult> GetStoryDetail(int storyId)
         {
-            int userId = 2;
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
             var lastReadChapterNumber = await GetLastestChapterUserRead(storyId, userId);
             var story = await _context.Stories.Where(c => c.StoryId == storyId && c.Status > 0)

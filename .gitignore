@@ -1,0 +1,27 @@
+# Build results
+**/bin/**
+**/obj/**
+
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio Code
+.vscode/
+.vs/
+
+# Others
+*.log
+*.tmp
+*.db
+.env
+*.DS_Store
+
+# ASP.NET secrets
+**/appsettings.*.json
+**/appsettings.json
+
+**/properties/*

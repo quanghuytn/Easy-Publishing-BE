@@ -13,6 +13,7 @@ using app.Interface;
 using app.Repository;
 using app.Service;
 using System.Text.Json;
+using app.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
@@ -167,7 +168,7 @@ app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();
-
+app.UseCustomExceptionHandler();
 
 app.MapControllers();
 
