@@ -1,0 +1,22 @@
+﻿namespace EP.Domain.Models;
+
+public partial class RefundRequest
+{
+    public long RequestId { get; set; }
+
+    public int WalletId { get; set; }
+
+    public string? BankId { get; set; }
+
+    public string? BankAccount { get; set; }
+
+    public decimal Amount { get; set; }
+
+    public DateTime RequestTime { get; set; }
+
+    public DateTime? ResponseTime { get; set; }
+
+    public bool? Status { get; set; }
+
+    public virtual Wallet Wallet { get; set; } = null!;
+}
