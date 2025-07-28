@@ -1,4 +1,4 @@
-﻿using EP.Application.Commands.Category;
+﻿using EP.Application.Commands.Categories;
 using EP.Application.Common.DTOs.Category;
 using EP.Application.Common.Interfaces;
 using EP.Domain.Models;
@@ -7,18 +7,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EP.Infrastructure.Repositories
 {
-    public class CategoryRepository : ICategoryRepository
+    public class CategoryRepository : Repository<Category>, ICategoryRepository
     {
-        private readonly Context _context;
-
-        public CategoryRepository(Context context)
+        public CategoryRepository(Context context) : base(context)
         {
-            _context = context;
         }
 
         public async Task<IEnumerable<CategoryDto>> GetAllCategories()
         {
-            return await _context.Categories
+            return await _dbSet
                 .AsNoTracking()
                 .Include(c => c.Stories)
                 .Select(c => new CategoryDto
@@ -34,7 +31,7 @@ namespace EP.Infrastructure.Repositories
 
         public async Task<CategoryDto?> GetCategoryById(int id)
         {
-            var category = await _context.Categories.Where(c => c.CategoryId == id)
+            var category = await _dbSet.Where(c => c.CategoryId == id)
                 .Select(c => new CategoryDto
                 {
                     CategoryId = c.CategoryId,
@@ -48,61 +45,24 @@ namespace EP.Infrastructure.Repositories
             return category;
         }
 
-        public async Task<OptionFilterDto> GetOptionFilter()
-        {
-            var categories = await _context.Categories
-                .AsNoTracking()
-                .Select(c => new CategoryDto
-                {
-                    CategoryId = c.CategoryId,
-                    CategoryName = c.CategoryName,
-                    CategoryDescription = c.CategoryDescription
-                })
-                .ToListAsync();
-
-            var prices = await _context.Stories
-                .AsNoTracking()
-                .Select(s => s.StoryPrice)
-                .ToListAsync();
-
-            decimal from = 0, to = 0;
-            if (prices.Count > 0)
-            {
-                from = prices.Min();
-                to = prices.Max();
-            }
-
-            return new OptionFilterDto
-            {
-                Categories = categories,
-                From = from,
-                To = to
-            };
-        }
-
-        public async Task UpdateCategory(Category category)
-        {
-            _context.Entry(category).State = EntityState.Modified;
-        }
-
         public async Task<bool> AddCategory(AddCategoryCommand newCategory)
         {
-            if ((_context.Categories?.Any(e => e.CategoryName == newCategory.CategoryName) ?? false))
+            if ((_dbSet?.Any(e => e.CategoryName == newCategory.CategoryName) ?? false))
             {
                 return false;
             }
 
             try
             {
-                Category category = new Category()
+                Category category = new()
                 {
                     CategoryName = newCategory.CategoryName,
                     CategoryBanner = newCategory.CategoryBanner,
                     CategoryDescription = newCategory.CategoryDescription,
                 };
-                if (_context.Categories != null)
+                if (_dbSet != null)
                 {
-                    await _context.Categories.AddAsync(category);
+                    await _dbSet.AddAsync(category);
                 }
                 else
                 {
@@ -114,11 +74,6 @@ namespace EP.Infrastructure.Repositories
                 throw new Exception("Add Category Fail!");
             }
             return true;
-        }
-
-        public async Task<Category?> GetByIdAsync(int id)
-        {
-            return await _context.Categories.FindAsync(id);
         }
     }
 }

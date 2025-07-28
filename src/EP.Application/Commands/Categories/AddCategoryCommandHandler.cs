@@ -1,12 +1,8 @@
 ﻿using EP.Application.Common.Interfaces;
+using EP.Domain.Models;
 using MediatR;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace EP.Application.Commands.Category
+namespace EP.Application.Commands.Categories
 {
     public record AddCategoryCommand : IRequest<bool>
     {
@@ -14,7 +10,7 @@ namespace EP.Application.Commands.Category
         public string? CategoryBanner { get; set; }
         public string? CategoryDescription { get; set; }
     }
-    public class AddCategoryCommandHandler: IRequestHandler<AddCategoryCommand, bool>
+    public class AddCategoryCommandHandler : IRequestHandler<AddCategoryCommand, bool>
     {
         private readonly IUnitOfWork _unitOfWork;
         public AddCategoryCommandHandler(IUnitOfWork unitOfWork)
@@ -23,10 +19,17 @@ namespace EP.Application.Commands.Category
         }
         public async Task<bool> Handle(AddCategoryCommand request, CancellationToken cancellationToken)
         {
-            var result = await _unitOfWork.Category.AddCategory(request);
+            var category = new Category
+            {
+                CategoryName = request.CategoryName,
+                CategoryBanner = request.CategoryBanner,
+                CategoryDescription = request.CategoryDescription
+            };
+
+            await _unitOfWork.Repository<Category>().AddAsync(category);
             await _unitOfWork.CompleteAsync();
 
-            return result;
+            return true;
         }
     }
 }

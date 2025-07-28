@@ -10,6 +10,6 @@ namespace EP.Application.Common.DTOs.Category
     {
         public decimal To { get; set; }
         public decimal From { get; set; }
-        public required List<CategoryDto> Categories { get; set; }
+        public required IEnumerable<CategoryDto> Categories { get; set; }
     }
 }

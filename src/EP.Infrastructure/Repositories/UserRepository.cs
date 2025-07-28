@@ -12,13 +12,10 @@ using System.Threading.Tasks;
 
 namespace EP.Infrastructure.Repositories
 {
-    public class UserRepository : IUserRepository
+    public class UserRepository : Repository<User>, IUserRepository
     {
-        private readonly Context _context;
-
-        public UserRepository(Context context)
+        public UserRepository(Context context) : base(context)
         {
-            _context = context;
         }
         public Task AddNewUser(User user)
         {
@@ -27,7 +24,7 @@ namespace EP.Infrastructure.Repositories
 
         public AccountDto? getAccountById(int id)
         {
-            var user = _context.Users.Where(u => u.UserId == id)
+            var user = _dbSet.Where(u => u.UserId == id)
                 .AsNoTracking()
                 .Select(u => new AccountDto
                 {
@@ -49,14 +46,9 @@ namespace EP.Infrastructure.Repositories
             return user;
         }
 
-        public async Task<User?> GetUserById(int id)
-        {
-            return await _context.Users.FirstOrDefaultAsync(u => u.UserId == id);
-        }
-
         public async Task<UserDto?> GetUserByUsernameOrEmail(string usernameOrEmail)
         {
-            return await _context.Users
+            return await _dbSet
                 .Where(u => u.Username == usernameOrEmail || u.Email == usernameOrEmail)
                 .Select(u => new UserDto
                 {

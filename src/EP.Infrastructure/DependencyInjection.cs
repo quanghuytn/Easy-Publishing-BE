@@ -1,5 +1,6 @@
 ﻿using EP.Application.Common.Interfaces;
 using EP.Application.Common.Interfaces.Services;
+using EP.Infrastructure.Data;
 using EP.Infrastructure.Repositories;
 using EP.Infrastructure.Services;
 using EP.Infrastructure.UnitOfWorks;
@@ -17,12 +18,13 @@ namespace EP.Infrastructure
             services.AddScoped<ICategoryRepository, CategoryRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IShelvesRepository, ShelvesRepository>();
+            services.AddScoped<IStoryRepository, StoryRepository>();
 
             services.AddScoped<IFileStorageService, FileStorageService>();
             services.AddScoped<IHashService, HashService>();
             services.AddScoped<ITokenService, TokenService>();
 
-            services.AddScoped<IUnitOfWork, UnitOfWork>();
+            services.AddScoped<IUnitOfWork, UnitOfWork<Context>>();
 
             return services;
         }

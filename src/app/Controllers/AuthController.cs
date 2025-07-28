@@ -4,7 +4,7 @@ using app.Interface;
 using app.Models;
 using app.Service;
 using EP.Application.Commands.Auth;
-using EP.Application.Commands.User;
+using EP.Application.Commands.Users;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
