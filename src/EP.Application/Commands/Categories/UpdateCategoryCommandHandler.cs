@@ -1,5 +1,4 @@
 ﻿using EP.Application.Common.Interfaces;
-using EP.Domain.Models;
 using MediatR;
 
 namespace EP.Application.Commands.Categories
@@ -20,7 +19,7 @@ namespace EP.Application.Commands.Categories
         }
         public async Task<Unit> Handle(UpdateCategoryCommand request, CancellationToken cancellationToken)
         {
-            var category = await _unitOfWork.Repository<Category>().GetByIdAsync(request.CategoryId);
+            var category = await _unitOfWork.CategoryRepository.GetByIdAsync(request.CategoryId);
 
             if (category == null)
             {
@@ -30,7 +29,7 @@ namespace EP.Application.Commands.Categories
             category.CategoryName = request.CategoryName;
             category.CategoryBanner = request.CategoryBanner;   
             category.CategoryDescription = request.CategoryDescription;
-            await _unitOfWork.Repository<Category>().UpdateAsync(category);
+            await _unitOfWork.CategoryRepository.UpdateAsync(category);
             await _unitOfWork.CompleteAsync();
 
             return Unit.Value;

@@ -24,7 +24,7 @@ namespace EP.Infrastructure
             services.AddScoped<IHashService, HashService>();
             services.AddScoped<ITokenService, TokenService>();
 
-            services.AddScoped<IUnitOfWork, UnitOfWork<Context>>();
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             return services;
         }

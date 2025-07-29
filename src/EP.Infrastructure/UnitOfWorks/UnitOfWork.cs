@@ -5,27 +5,35 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EP.Infrastructure.UnitOfWorks
 {
-    public class UnitOfWork<TContext> : IUnitOfWork where TContext : DbContext
+    public class UnitOfWork(Context context) : IUnitOfWork
     {
-        private readonly TContext _context;
+        private readonly Context _context = context ?? throw new ArgumentNullException(nameof(context));
         private bool _disposed;
-        private Dictionary<Type, object> _repositories;
+        private IUserRepository? _userRepository;
+        private ICategoryRepository? _categoryRepository;
 
-        public UnitOfWork(TContext context)
+        public IUserRepository UserRepository
         {
-            _context = context ?? throw new ArgumentNullException("test");
-            _repositories = new Dictionary<Type, object>();
-        }
-        public IRepository<T> Repository<T>() where T : class
-        {
-            if (_repositories.ContainsKey(typeof(T)))
+            get
             {
-                return (_repositories[typeof(T)] as IRepository<T>)!;
+                if (_userRepository == null)
+                {
+                    _userRepository = new UserRepository(_context);
+                }
+                return _userRepository;
             }
+        }
 
-            var repository = new Repository<T>(_context);
-            _repositories.Add(typeof(T), repository);
-            return repository;
+        public ICategoryRepository CategoryRepository
+        {
+            get
+            {
+                if (_categoryRepository == null)
+                {
+                    _categoryRepository = new CategoryRepository(_context);
+                }
+                return _categoryRepository;
+            }
         }
 
         public async Task<int> CompleteAsync()

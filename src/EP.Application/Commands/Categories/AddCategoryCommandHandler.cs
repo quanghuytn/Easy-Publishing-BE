@@ -26,7 +26,7 @@ namespace EP.Application.Commands.Categories
                 CategoryDescription = request.CategoryDescription
             };
 
-            await _unitOfWork.Repository<Category>().AddAsync(category);
+            await _unitOfWork.CategoryRepository.AddAsync(category);
             await _unitOfWork.CompleteAsync();
 
             return true;

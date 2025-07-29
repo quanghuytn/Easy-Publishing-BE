@@ -1,4 +1,5 @@
 ﻿using Azure;
+using EP.Application.Common;
 using EP.Application.Common.DTOs.Category;
 using EP.Application.Common.DTOs.Shelves;
 using EP.Application.Common.Interfaces;
@@ -12,21 +13,22 @@ using System.Threading.Tasks;
 
 namespace EP.Application.Queries.Shelves
 {
-    public record GetMinimalTopStoriesReadQuery : IRequest<PaginatedResult<TopReadStoryDto>>
+    public record GetMinimalTopStoriesReadQuery : IRequest<ApiResponse<PaginatedResult<TopStoryDto>>>
     {
         public int PageIndex { get; set; }
-        public int PageSize { get; set; }
+        public int PageSize { get; set; } = 10;
     }
-    public class GetMinimalTopStoriesReadQueryHandler : IRequestHandler<GetMinimalTopStoriesReadQuery, PaginatedResult<TopReadStoryDto>>
+    public class GetMinimalTopStoriesReadQueryHandler : IRequestHandler<GetMinimalTopStoriesReadQuery, ApiResponse<PaginatedResult<TopStoryDto>>>
     {
         private readonly IShelvesRepository _shelvesRepository;
         public GetMinimalTopStoriesReadQueryHandler(IShelvesRepository shelvesRepository)
         {
             _shelvesRepository = shelvesRepository;
         }
-        public async Task<PaginatedResult<TopReadStoryDto>> Handle(GetMinimalTopStoriesReadQuery request, CancellationToken cancellationToken)
+        public async Task<ApiResponse<PaginatedResult<TopStoryDto>>> Handle(GetMinimalTopStoriesReadQuery request, CancellationToken cancellationToken)
         {
-            return await _shelvesRepository.GetMinimalTopStoriesRead(request.PageIndex, request.PageSize);
+            var data = await _shelvesRepository.GetMinimalTopStoriesRead(request.PageIndex, request.PageSize);
+            return ApiResponse<PaginatedResult<TopStoryDto>>.Success(data, "Top lượt đọc");
         }
     }
 }

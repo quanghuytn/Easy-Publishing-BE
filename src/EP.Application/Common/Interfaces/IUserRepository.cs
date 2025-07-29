@@ -9,7 +9,7 @@ namespace EP.Application.Common.Interfaces
         Task<UserDto?> GetUserByUsernameOrEmail(string usernameOrEmail);
         Task AddNewUser(User user);
         void ResetPassword(int userId, string newHashedPassword);
-        AccountDto? getAccountById(int id);
+        Task<AccountDto?> getAccountById(int id);
         //string? updateAvatar(int userId, AvatarForm data);
         Task<string> SwitchStatus(string email);
         //Task<List<UserDTO>> GetAllUsers();
