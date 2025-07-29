@@ -1,10 +1,11 @@
 ﻿using app.DTOs.Auth;
 using app.DTOs.User;
 using app.Interface;
-using app.Models;
 using app.Service;
 using EP.Application.Commands.Auth;
-using EP.Application.Commands.Users;
+using EP.Application.Commands.User;
+using EP.Application.Queries.Auth;
+using EP.Application.Queries.User;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -61,69 +62,22 @@ namespace app.Controllers
         }
 
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterForm data)
+        public async Task<IActionResult> Register([FromBody] RegisterCommand command)
         {
-            if (string.IsNullOrEmpty(data.Email) || string.IsNullOrEmpty(data.Password) || string.IsNullOrEmpty(data.Username))
+            var result = await _mediator.Send(command);
+            if(result == 0)
             {
                 return new JsonResult(new
                 {
                     EC = 1,
-                    EM = "Vui lòng nhập đủ thông tin yêu cầu",
+                    EM = "Đăng ký tài khoản thất bại, vui lòng thử lại sau!"
                 });
             }
 
-            var user = _userRepo.getUserByUsernameOrEmail(data.Email);
-            if (user != null)
-            {
-                return new JsonResult(new
-                {
-                    EC = 2,
-                    EM = "Email đã được đăng ký bởi tài khoản khác",
-                });
-            }
-
-            user = _userRepo.getUserByUsernameOrEmail(data.Username);
-            if (user != null)
-            {
-                return new JsonResult(new
-                {
-                    EC = 3,
-                    EM = "Username đã được đăng ký bởi tài khoản khác",
-                });
-            }
-
-            if (!data.Password.Equals(data.ConfirmPassword))
-            {
-                return new JsonResult(new
-                {
-                    EC = 4,
-                    EM = "Xác nhận mật khẩu không khớp với mật khẩu đã nhập"
-                });
-            }
-
-            string passwordHash = hashService.Hash(data.Password);
-            try
-            {
-                await _userRepo.addNewUser(new User
-                {
-                    Email = data.Email,
-                    Password = passwordHash,
-                    Username = data.Username,
-                    Gender = true
-                });
-            }
-            catch (Exception)
-            {
-                return new JsonResult(new
-                {
-                    EC = -1,
-                    EM = "Hệ thống xảy ra lỗi!"
-                });
-            }
             return new JsonResult(new
             {
                 EC = 0,
-                EM = "Đăng ký tài khoản thành công",
+                EM = "Đăng ký tài khoản thành công!",
             });
         }
 
@@ -148,32 +102,6 @@ namespace app.Controllers
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
-
-        //private string CreateToken(UserDTO user)
-        //{
-        //    var tokenHandler = new JwtSecurityTokenHandler();
-        //    var tokenDescriptor = new SecurityTokenDescriptor
-        //    {
-        //        Subject = new ClaimsIdentity(new Claim[]
-        //        {
-        //        new Claim("userId", user.Id.ToString()),
-        //        new Claim("email", user.Email),
-        //        new Claim("username", user.Username),
-        //        new Claim("Role", user.Role),
-        //        }),
-        //        Issuer = _configuration.GetSection("JWTConfig:Issuer").Value!,
-        //        Audience = _configuration.GetSection("JWTConfig:Audience").Value!,
-        //        Expires = DateTime.UtcNow.AddDays(Int32.Parse(_configuration.GetSection("JWTConfig:Time").Value!)),
-        //        SigningCredentials = new SigningCredentials(
-        //            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.GetSection("JWTConfig:Key").Value!)),
-        //            SecurityAlgorithms.HmacSha256)
-        //    };
-        //    var token = tokenHandler.CreateToken(tokenDescriptor);
-
-        //    // Serialize token to string
-        //    string jwt = tokenHandler.WriteToken(token);
-        //    return jwt;
-        //}
 
         private string CreateForgotPasswordToken(string email)
         {
@@ -220,36 +148,10 @@ namespace app.Controllers
         }
 
         [HttpPost("forgot_password")]
-        public IActionResult SendMailConfirm([FromBody] ForgotPasswordForm data)
+        public async Task<IActionResult> SendMailConfirm([FromBody] SendMailConfirmQuery query)
         {
-            var user = _userRepo.getUserByUsernameOrEmail(data.Email);
-            if (user == null)
-            {
-                return new JsonResult(new
-                {
-                    EC = 1,
-                    EM = "Email chưa được đăng ký",
-                });
-            }
-            try
-            {
-                string token = CreateForgotPasswordToken(data.Email);
-                mailService.Send(data.Email,
-                        "Easy Publishing: Đặt lại mật khẩu",
-                        "<b>Xin chào " + user.Username + ",</b>" +
-                        "<p>Chúng tôi đã nhận được một yêu cầu đặt lại mật khẩu! </p> " +
-                        "<p>Vui lòng bỏ qua mail này nếu bạn không phải người thực hiện.</p> " +
-                        "<p>Nếu bạn là người thực hiện yêu cầu, vui lòng click vào đường dẫn dưới đây để đặt lại mật khẩu:</p> " +
-                        "<a href =\"https://genesis-easy-publishing.vercel.app//auth/reset-password?token=" + token + "\">Đặt lại mật khẩu</a>");
-            }
-            catch (Exception ex)
-            {
-                return new JsonResult(new
-                {
-                    EC = 1,
-                    EM = "Error: " + ex.Message,
-                });
-            }
+            await _mediator.Send(query);
+
             return new JsonResult(new
             {
                 EC = 0,
@@ -259,45 +161,18 @@ namespace app.Controllers
 
         [Authorize]
         [HttpPost("reset_password")]
-        public IActionResult ResetPassword([FromBody] ResetPasswordForm data)
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordForm data)
         {
             string email = User.FindFirstValue(JwtRegisteredClaimNames.Email);
 
-            var user = _userRepo.getUserByUsernameOrEmail(email);
-            if (user == null)
+            await _mediator.Send(new ResetPasswordCommand
             {
-                return new JsonResult(new
-                {
-                    EC = 1,
-                    EM = "Người dùng không tồn tại"
-                });
-            }
-            if (!data.Password.Equals(data.ConfirmPassword))
-            {
-                return new JsonResult(new
-                {
-                    EC = 2,
-                    EM = "Xác nhận mật khẩu không khớp với mật khẩu đã nhập"
-                });
-            }
+                Email = email,
+                Token = data.Token,
+                Password = data.Password,
+                ConfirmPassword = data.ConfirmPassword
+            });
 
-            try
-            {
-                _userRepo.resetPassword(user.UserId, hashService.Hash(data.Password));
-                mailService.Send(email,
-                    "Easy Publishing: Đặt lại mật khẩu",
-                    "<b>Xin chào " + user.Username + ",</b>" +
-                    "<p>Mật khẩu của bạn đã được đặt lại thành công!</p> " +
-                    "<p>Mật khẩu mới: <b>" + data.Password + "</b></p>");
-            }
-            catch (Exception ex)
-            {
-                return new JsonResult(new
-                {
-                    EC = 3,
-                    EM = "Error: " + ex.Message,
-                });
-            }
             return new JsonResult(new
             {
                 EC = 0,
@@ -311,21 +186,13 @@ namespace app.Controllers
 
         [Authorize]                
         [HttpGet("account")]
-        public IActionResult GetAccount()
+        public async Task<IActionResult> GetAccount()
         {
             int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
-            var user = _userRepo.getAccountById(userId);
-            return new JsonResult(new
-            {
-                EC = 0,
-                EM = "Thông tin tài khoản",
-                DT = new
-                {
-                    user = user
-                },
-            });
+            var query = new GetAccountQuery{ UserId = userId};
+            var result = await _mediator.Send(query);
 
-
+            return Ok(result);
         }
 
         [Authorize]
@@ -366,21 +233,6 @@ namespace app.Controllers
                 {
                     access_token = accessToken
                 }
-            });
-        }
-
-        [HttpPut("test")]
-        public async Task<IActionResult> Test(IFormFile image)
-        {
-            //using var stream = image.OpenReadStream();
-            //var command = new UpdateAvatarCommand { FileName = image.FileName, FileStream = stream };
-
-            //await _mediator.Send(command);
-
-            return new JsonResult(new
-            {
-                EC = 0,
-                EM = "Test thành công"
             });
         }
 
@@ -458,37 +310,37 @@ namespace app.Controllers
             });
         }
 
-        [HttpPost("verify_token")]
-        public IActionResult VerifyToken([FromBody] VerifyTokenForm data)
-        {
-            string token = data.Token;
-            if (string.IsNullOrEmpty(token))
-            {
-                return new JsonResult(new
-                {
-                    EC = 1,
-                    EM = "Token không hợp lệ"
-                });
-            }
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var jwtToken = tokenHandler.ReadJwtToken(token);
-            DateTime expirationDate = jwtToken.ValidTo;
-            if (DateTime.UtcNow < expirationDate)
-            {
-                return new JsonResult(new
-                {
-                    EC = 0,
-                    EM = "Token hợp lệ",
-                });
-            }
-            else
-            {
-                return new JsonResult(new
-                {
-                    EC = 2,
-                    EM = "Token đã hết hạn",
-                });
-            }
-        }
+        //[HttpPost("verify_token")]
+        //public IActionResult VerifyToken([FromBody] VerifyTokenForm data)
+        //{
+        //    string token = data.Token;
+        //    if (string.IsNullOrEmpty(token))
+        //    {
+        //        return new JsonResult(new
+        //        {
+        //            EC = 1,
+        //            EM = "Token không hợp lệ"
+        //        });
+        //    }
+        //    var tokenHandler = new JwtSecurityTokenHandler();
+        //    var jwtToken = tokenHandler.ReadJwtToken(token);
+        //    DateTime expirationDate = jwtToken.ValidTo;
+        //    if (DateTime.UtcNow < expirationDate)
+        //    {
+        //        return new JsonResult(new
+        //        {
+        //            EC = 0,
+        //            EM = "Token hợp lệ",
+        //        });
+        //    }
+        //    else
+        //    {
+        //        return new JsonResult(new
+        //        {
+        //            EC = 2,
+        //            EM = "Token đã hết hạn",
+        //        });
+        //    }
+        //}
     }
 }

@@ -1,0 +1,32 @@
+﻿using EP.Application.Common;
+using EP.Application.Common.DTOs.Shelves;
+using EP.Application.Common.Interfaces;
+using EP.Application.Common.Pagination;
+using MediatR;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace EP.Application.Queries.Shelves
+{
+    public record GetMinimalTopFamousStoriesQuery : IRequest<ApiResponse<PaginatedResult<TopStoryDto>>>
+    {
+        public int PageIndex { get; set; }
+        public int PageSize { get; set; } = 10;
+    }
+    public class GetMinimalTopFamousStoriesQueryHandler : IRequestHandler<GetMinimalTopFamousStoriesQuery, ApiResponse<PaginatedResult<TopStoryDto>>>
+    {
+        private readonly IShelvesRepository _shelvesRepository;
+        public GetMinimalTopFamousStoriesQueryHandler(IShelvesRepository shelvesRepository)
+        {
+            _shelvesRepository = shelvesRepository;
+        }
+        public async Task<ApiResponse<PaginatedResult<TopStoryDto>>> Handle(GetMinimalTopFamousStoriesQuery request, CancellationToken cancellationToken)
+        {
+            var data = await _shelvesRepository.GetMinimalTopFamousStories(request.PageIndex, request.PageSize);
+            return ApiResponse<PaginatedResult<TopStoryDto>>.Success(data, "Top nổi bật");
+        }
+    }
+}

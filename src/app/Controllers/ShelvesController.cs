@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.EntityFrameworkCore;
+using System.Drawing.Printing;
 using System.Security.Claims;
 
 namespace app.Controllers
@@ -28,7 +29,6 @@ namespace app.Controllers
             _mediator = mediator;
         }
 
-        // GET: api/Stories : top famous story
         [HttpGet("top_famous")]
         [EnableQuery]
         public async Task<ActionResult> GetTopFamousStories(int page)
@@ -36,6 +36,15 @@ namespace app.Controllers
             var stories = await _shelvesRepository.GetTopFamousStories();
             return _msgService.MsgPagingReturn("Top nổi bật",
                 stories.Skip(pagesize * (page - 1)).Take(pagesize), page, pagesize, stories.Count);
+        }
+
+        [HttpGet("minimal_top_famous")]
+        [EnableQuery]
+        public async Task<ActionResult> GetMinimalTopFamousStories(int page)
+        {
+            var query = new GetMinimalTopFamousStoriesQuery { PageIndex = page };
+            var result = await _mediator.Send(query);
+            return Ok(result);
         }
 
         [HttpGet("top_latest_by_chapter")]
@@ -46,7 +55,15 @@ namespace app.Controllers
             return _msgService.MsgPagingReturn("Truyện mới update",
                 stories.Skip(pagesize * (page - 1)).Take(pagesize), page, pagesize, stories.Count);
         }
-        // GET: api/Stories : top 6 purchase story
+
+        [HttpGet("minimal_top_latest_by_chapter")]
+        public async Task<ActionResult> GetMinimalTopLatestStoriesByChapter(int page)
+        {
+            var query = new GetMinimalTopLatestStoriesByChapterQuery { PageIndex = page };
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+
         [HttpGet("top6_purchase")]
         public async Task<ActionResult> GetTop6StoriesBuy()
         {
@@ -85,8 +102,7 @@ namespace app.Controllers
         {
             var query = new GetMinimalTopStoriesReadQuery { PageIndex = page, PageSize = pagesize };
             var result = await _mediator.Send(query);
-            return _msgService.MsgPagingReturn("Top lượt đọc",
-                result.Data, page, pagesize, result.TotalCount);
+            return Ok(result);
         }
 
         // GET: api/Stories : top price accend story 
@@ -107,6 +123,14 @@ namespace app.Controllers
             var stories = await _shelvesRepository.GetTopLatestStories();
             return _msgService.MsgPagingReturn("Truyện mới thêm",
                stories.Skip(pagesize * (page - 1)).Take(pagesize), page, pagesize, stories.Count);
+        }
+
+        [HttpGet("minimal_top_newest")]
+        public async Task<ActionResult> GetMinimalTopLatestStories(int page)
+        {
+            var query = new GetMinimalTopLatestStoriesQuery { PageIndex = page, PageSize = pagesize };
+            var result = await _mediator.Send(query);
+            return Ok(result);
         }
 
         // GET: api/Stories : stories of each cate
@@ -143,33 +167,9 @@ namespace app.Controllers
         [EnableQuery]
         public async Task<ActionResult> GetTopStoriesReadShelves(int cateId)
         {
-            var stories = await _context.Stories.Where(c => c.Categories.Any(u => u.CategoryId == cateId) && c.Status > 0)
-                .Include(c => c.StoryInteraction)
-                .Include(c => c.Author)
-                .Include(c => c.Categories)
-                .Include(c => c.Chapters)
-                .Select(s => new
-                {
-                    StoryId = s.StoryId,
-                    StoryTitle = s.StoryTitle,
-                    StoryImage = s.StoryImage,
-                    StoryDescription = s.StoryDescription,
-                    StoryDescriptionHtml = s.StoryDescriptionHtml,
-                    StoryDescriptionMarkdown = s.StoryDescriptionMarkdown,
-                    StoryCategories = s.Categories.ToList(),
-                    StoryAuthor = new { s.Author.UserId, s.Author.UserFullname },
-                    StoryCreateTime = s.CreateTime,
-                    StoryChapterNumber = s.Chapters.Count,
-                    StoryInteraction = new
-                    {
-                        s.StoryInteraction.Like,
-                        s.StoryInteraction.Follow,
-                        s.StoryInteraction.View,
-                        s.StoryInteraction.Read,
-                    },
-                })
-                .OrderByDescending(c => c.StoryInteraction.Read).Take(10).ToListAsync(); // top by read
-            return _msgService.MsgReturn(0, "Top lượt đọc theo thể loại", stories);
+            var query = new GetTopStoriesReadShelvesQuery { CategoryId = cateId };
+            var result = await _mediator.Send(query);
+            return Ok(result);
         }
 
         // get stories each cate
@@ -177,47 +177,9 @@ namespace app.Controllers
         [EnableQuery]
         public async Task<ActionResult> GetStoriesTopCate(int cateId)
         {
-            var stories = await _context.Stories.Where(c => c.Categories.Any(u => u.CategoryId == cateId) && c.Status > 0)
-                .Include(c => c.Users)
-                .Include(c => c.Author)
-                .Include(c => c.Categories)
-                .Include(c => c.Chapters)
-                .Select(s => new
-                {
-                    StoryId = s.StoryId,
-                    StoryTitle = s.StoryTitle,
-                    StoryImage = s.StoryImage,
-                    StoryDescription = s.StoryDescription,
-                    StoryDescriptionHtml = s.StoryDescriptionHtml,
-                    StoryDescriptionMarkdown = s.StoryDescriptionMarkdown,
-                    StoryCategories = s.Categories.ToList(),
-                    StoryAuthor = new { s.Author.UserId, s.Author.UserFullname },
-                    StoryCreateTime = s.CreateTime,
-                    StoryChapterNumber = s.Chapters.Count,
-                    StoryLatestChapter = s.Chapters.Where(c => c.Status > 0).OrderByDescending(c => c.ChapterId).FirstOrDefault() == null ? null :
-                    new
-                    {
-                        s.Chapters.Where(c => c.Status > 0).OrderByDescending(c => c.ChapterNumber).FirstOrDefault().ChapterId,
-                        s.Chapters.Where(c => c.Status > 0).OrderByDescending(c => c.ChapterNumber).FirstOrDefault().ChapterNumber,
-                        s.Chapters.Where(c => c.Status > 0).OrderByDescending(c => c.ChapterNumber).FirstOrDefault().ChapterTitle,
-                        s.Chapters.Where(c => c.Status > 0).OrderByDescending(c => c.ChapterNumber).FirstOrDefault().CreateTime
-                    },
-                    StoryPrice = s.StoryPrice,
-                    StoryInteraction = new
-                    {
-                        s.StoryInteraction.Like,
-                        s.StoryInteraction.Follow,
-                        s.StoryInteraction.View,
-                        s.StoryInteraction.Read,
-                    },
-                })
-                .OrderByDescending(s => s.StoryLatestChapter.ChapterId)
-                .ThenByDescending(s => s.StoryId)
-                .ThenByDescending(s => s.StoryInteraction.Read).ThenByDescending(s => s.StoryInteraction.Follow)
-                .ThenByDescending(s => s.StoryInteraction.Like).Take(5)
-                .ToListAsync();
-
-            return _msgService.MsgReturn(0, "Top theo thể loại", stories);
+            var query = new GetStoriesTopCateQuery { CategoryId = cateId};
+            var result = await _mediator.Send(query);
+            return Ok(result);
         }
 
         // get stories each cate
@@ -225,49 +187,9 @@ namespace app.Controllers
         [EnableQuery]
         public async Task<ActionResult> GetStoriesEachCate(int cateId, int page, int pageSize)
         {
-            var stories = await _context.Stories.Where(c => c.Categories.Any(u => u.CategoryId == cateId) && c.Status > 0)
-                .Include(c => c.Users)
-                .Include(c => c.Author)
-                .Include(c => c.Categories)
-                .Include(c => c.Chapters)
-                .Include(c => c.StoryInteraction)
-                .Select(s => new
-                {
-                    StoryId = s.StoryId,
-                    StoryTitle = s.StoryTitle,
-                    StoryImage = s.StoryImage,
-                    StoryDescription = s.StoryDescription,
-                    StoryDescriptionHtml = s.StoryDescriptionHtml,
-                    StoryDescriptionMarkdown = s.StoryDescriptionMarkdown,
-                    StoryCategories = s.Categories.ToList(),
-                    StoryAuthor = new { s.Author.UserId, s.Author.UserFullname },
-                    StoryCreateTime = s.CreateTime,
-                    StoryChapterNumber = s.Chapters.Count,
-                    StoryLatestChapter = s.Chapters.Where(c => c.Status > 0).OrderByDescending(c => c.ChapterId).FirstOrDefault() == null ? null :
-                    new
-                    {
-                        s.Chapters.Where(c => c.Status > 0).OrderByDescending(c => c.ChapterNumber).FirstOrDefault().ChapterId,
-                        s.Chapters.Where(c => c.Status > 0).OrderByDescending(c => c.ChapterNumber).FirstOrDefault().ChapterNumber,
-                        s.Chapters.Where(c => c.Status > 0).OrderByDescending(c => c.ChapterNumber).FirstOrDefault().ChapterTitle,
-                        s.Chapters.Where(c => c.Status > 0).OrderByDescending(c => c.ChapterNumber).FirstOrDefault().CreateTime
-                    },
-                    StoryPrice = s.StoryPrice,
-                    StoryInteraction = new
-                    {
-                        s.StoryInteraction.Like,
-                        s.StoryInteraction.Follow,
-                        s.StoryInteraction.View,
-                        s.StoryInteraction.Read,
-                    },
-                })
-                .OrderByDescending(s => s.StoryLatestChapter.ChapterId)
-                .ThenByDescending(s => s.StoryId)
-                .ThenByDescending(s => s.StoryInteraction.Read).ThenByDescending(s => s.StoryInteraction.Follow)
-                .ThenByDescending(s => s.StoryInteraction.Like)
-                .ToListAsync();
-            pageSize = pageSize == null || pageSize == 0 ? pagesize : pageSize;
-            return _msgService.MsgPagingReturn("Truyện theo thể loại",
-                stories.Skip(pageSize * (page - 1)).Take(pageSize), page, pageSize, stories.Count);
+            var query = new GetStoriesEachCateQuery { CategoryId = cateId, PageIndex = page, PageSize = pageSize };
+            var result = await _mediator.Send(query);
+            return Ok(result);
         }
 
         // get stories each cate
@@ -275,50 +197,9 @@ namespace app.Controllers
         [EnableQuery]
         public async Task<ActionResult> GetStoriesDoneEachCate(int cateId, int page, int pageSize)
         {
-            var stories = await _context.Stories.Where(c => c.Status == 2 && c.Categories.Any(u => u.CategoryId == cateId))
-                .Include(c => c.Users)
-                .Include(c => c.Author)
-                .Include(c => c.Categories)
-                .Include(c => c.Chapters)
-                .Include(c => c.StoryInteraction)
-                .Select(s => new
-                {
-                    StoryId = s.StoryId,
-                    StoryTitle = s.StoryTitle,
-                    StoryImage = s.StoryImage,
-                    StoryDescription = s.StoryDescription,
-                    StoryDescriptionHtml = s.StoryDescriptionHtml,
-                    StoryDescriptionMarkdown = s.StoryDescriptionMarkdown,
-                    StoryCategories = s.Categories.ToList(),
-                    StoryAuthor = new { s.Author.UserId, s.Author.UserFullname },
-                    StoryCreateTime = s.CreateTime,
-                    StoryChapterNumber = s.Chapters.Count,
-                    StoryLatestChapter = s.Chapters.Where(c => c.Status > 0).OrderByDescending(c => c.ChapterId).FirstOrDefault() == null ? null :
-                    new
-                    {
-                        s.Chapters.Where(c => c.Status > 0).OrderByDescending(c => c.ChapterNumber).FirstOrDefault().ChapterId,
-                        s.Chapters.Where(c => c.Status > 0).OrderByDescending(c => c.ChapterNumber).FirstOrDefault().ChapterNumber,
-                        s.Chapters.Where(c => c.Status > 0).OrderByDescending(c => c.ChapterNumber).FirstOrDefault().ChapterTitle,
-                        s.Chapters.Where(c => c.Status > 0).OrderByDescending(c => c.ChapterNumber).FirstOrDefault().CreateTime
-                    },
-                    StoryPrice = s.StoryPrice,
-                    StoryInteraction = new
-                    {
-                        s.StoryInteraction.Like,
-                        s.StoryInteraction.Follow,
-                        s.StoryInteraction.View,
-                        s.StoryInteraction.Read,
-                    },
-                })
-                .OrderByDescending(s => s.StoryLatestChapter.ChapterId)
-                .ThenByDescending(s => s.StoryId)
-                .ThenByDescending(s => s.StoryInteraction.Read).ThenByDescending(s => s.StoryInteraction.Follow)
-                .ThenByDescending(s => s.StoryInteraction.Like)
-                .ToListAsync();
-
-            pageSize = pageSize == null || pageSize == 0 ? pagesize : pageSize;
-            return _msgService.MsgPagingReturn("Truyện hoàn thành theo thể loại",
-                stories.Skip(pageSize * (page - 1)).Take(pageSize), page, pageSize, stories.Count);
+            var query = new GetStoriesDoneEachCateQuery { CategoryId = cateId, PageIndex = page, PageSize = pageSize };
+            var result = await _mediator.Send(query);
+            return Ok(result);
         }
 
         // get stories by filter

@@ -1,6 +1,7 @@
 ﻿using EP.Application.Common.DTOs.User;
 using EP.Application.Common.Interfaces.Services;
 using EP.Application.Settings;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;   
 using System.IdentityModel.Tokens.Jwt;
@@ -37,6 +38,28 @@ namespace EP.Infrastructure.Services
                 signingCredentials: creds);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        public string CreateForgotPasswordToken(string email)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new Claim[]
+                {
+                new Claim("email", email)
+                }),
+                Issuer = _jwtSettings.Issuer,
+                Audience = _jwtSettings.Audience,
+                Expires = DateTime.UtcNow.AddHours(24),
+                SigningCredentials = new SigningCredentials(
+                    new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key)),
+                    SecurityAlgorithms.HmacSha256)
+            };
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+
+            string jwt = tokenHandler.WriteToken(token);
+            return jwt;
         }
     }
 }

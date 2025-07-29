@@ -12,5 +12,6 @@ namespace EP.Application.Common.Interfaces.Services
         /// <param name="user">The user to generate a token for</param>
         /// <returns>Generated JWT token as string</returns>
         string GenerateToken(UserDto user);
+        string CreateForgotPasswordToken(string email);
     }
 }

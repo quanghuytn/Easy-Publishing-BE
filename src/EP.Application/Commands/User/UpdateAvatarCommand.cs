@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace EP.Application.Commands.Users
+namespace EP.Application.Commands.User
 {
     public record UpdateAvatarCommand : IRequest<string>
     {

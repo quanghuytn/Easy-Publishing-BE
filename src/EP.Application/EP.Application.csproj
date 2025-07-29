@@ -23,8 +23,4 @@
     <ProjectReference Include="..\EP.Domain\EP.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Queries\Auth\" />
-  </ItemGroup>
-
 </Project>

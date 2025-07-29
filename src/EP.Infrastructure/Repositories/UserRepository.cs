@@ -22,9 +22,9 @@ namespace EP.Infrastructure.Repositories
             throw new NotImplementedException();
         }
 
-        public AccountDto? getAccountById(int id)
+        public async Task<AccountDto?> getAccountById(int id)
         {
-            var user = _dbSet.Where(u => u.UserId == id)
+            var user = await _dbSet.Where(u => u.UserId == id)
                 .AsNoTracking()
                 .Select(u => new AccountDto
                 {
@@ -42,21 +42,22 @@ namespace EP.Infrastructure.Repositories
                     DescriptionMarkdown = u.DescriptionMarkdown,
                     DescriptionHTML = u.DescriptionHtml,
                     TLT = u.Wallets.Select(w => w.Fund).FirstOrDefault()
-                }).FirstOrDefault();
+                }).FirstOrDefaultAsync();
             return user;
         }
 
         public async Task<UserDto?> GetUserByUsernameOrEmail(string usernameOrEmail)
         {
             return await _dbSet
+                .AsNoTracking()
                 .Where(u => u.Username == usernameOrEmail || u.Email == usernameOrEmail)
                 .Select(u => new UserDto
                 {
                     Id = u.UserId,
                     Email = u.Email,
                     Username = u.Username,
-                    Role = u.Role.RoleName,
                     Password = u.Password,
+                    Role = u.Role.RoleName,
                     Status = u.Status,
                 })
                 .FirstOrDefaultAsync();
@@ -64,7 +65,11 @@ namespace EP.Infrastructure.Repositories
 
         public void ResetPassword(int userId, string newHashedPassword)
         {
-            throw new NotImplementedException();
+            var user = _dbSet.Find(userId);
+            if (user != null)
+            {
+                user.Password = newHashedPassword;
+            }
         }
 
         public Task<string> SwitchStatus(string email)

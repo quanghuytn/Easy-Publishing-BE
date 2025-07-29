@@ -3,7 +3,7 @@ using EP.Application.Common.Interfaces.Services;
 using EP.Domain.Models;
 using MediatR;
 
-namespace EP.Application.Commands.Users
+namespace EP.Application.Commands.User
 {
     public class UpdateAvatarCommandHandler(IFileStorageService fileStorageService, IUnitOfWork unitOfWork) : IRequestHandler<UpdateAvatarCommand, string>
     {
@@ -19,7 +19,7 @@ namespace EP.Application.Commands.Users
                 throw new Exception("Failed to upload avatar.");
             }
 
-            var user = await _unitOfWork.Repository<User>().GetByIdAsync(request.UserId);
+            var user = await _unitOfWork.UserRepository.GetByIdAsync(request.UserId);
             if (user == null)
             {
                 throw new Exception("User not found.");

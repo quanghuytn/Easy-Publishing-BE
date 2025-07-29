@@ -166,6 +166,7 @@ builder.Services.AddScoped<IHashService, HashService>();
 builder.Services.AddAuthorization();
 
 builder.Services.Configure<JwtSetting>(builder.Configuration.GetSection("JWTConfig"));
+builder.Services.Configure<MailSetting>(builder.Configuration.GetSection("MailConfig"));
 
 builder.Services.AddInfrastructureService();
 

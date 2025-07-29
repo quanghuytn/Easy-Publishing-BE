@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace EP.Application.Common.DTOs.Shelves
 {
-    public class TopReadStoryDto
+    public class TopStoryDto
     {
         public int StoryId { get; set; }
         public string? StoryTitle { get; set; }
@@ -22,5 +22,8 @@ namespace EP.Application.Common.DTOs.Shelves
         public int StoryChapterNumber { get; set; }
         public ChapterShelfDto? StoryLatestChapter { get; set; }
         public MinimalInteractionDto? StoryInteraction { get; set; }
+        public int UserPurchaseStory { get; set; }
+        public int UserPurchaseChapter { get; set; }
+
     }
 }

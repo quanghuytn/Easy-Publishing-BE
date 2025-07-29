@@ -3,8 +3,8 @@ using EP.Application.Common.DTOs.Category;
 using EP.Application.Common.Interfaces;
 using MediatR;
 
-namespace EP.Application.Queries.Category
-{
+namespace EP.Application.Queries.Category 
+{ 
     public record GetCategoryByIdQuery : IRequest<ApiResponse<CategoryDto>>
     {
         public int CategoryId { get; set; }

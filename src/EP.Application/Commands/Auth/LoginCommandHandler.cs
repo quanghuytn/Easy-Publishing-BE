@@ -45,7 +45,7 @@ namespace EP.Application.Commands.Auth
             }
 
             var accessToken = _tokenService.GenerateToken(user);
-            var userResponse = _userRepository.getAccountById(user.Id);
+            var userResponse = await _userRepository.getAccountById(user.Id);
 
             return new LoginResponse
             {

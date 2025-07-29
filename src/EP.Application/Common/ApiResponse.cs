@@ -1,4 +1,8 @@
-﻿namespace EP.Application.Common
+﻿using Azure;
+using System.Collections.Generic;
+using System.Numerics;
+
+namespace EP.Application.Common
 {
     public class ApiResponse<T>
     {
