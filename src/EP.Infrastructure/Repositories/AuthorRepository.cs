@@ -30,9 +30,25 @@ namespace EP.Infrastructure.Repositories
                 }).FirstOrDefaultAsync();
         }
 
-        public Task<StoryRelateAuthorDto?> GetStoryRelateAuthor(int authorId)
+        public async Task<StoryRelateAuthorDto?> GetStoryRelateAuthor(int authorId)
         {
-            throw new NotImplementedException();
+            return await _dbSet
+                .AsNoTracking()
+                .Where(c => c.UserId == authorId)
+                .Include(c => c.Stories).ThenInclude(c => c.StoryInteraction)
+                .Select(c => new StoryRelateAuthorDto
+                {
+                    AuthorId = c.UserId,
+                    AuthorName = c.UserFullname,
+                    AuthorImage = c.UserImage,
+                    AuthorStories = c.Stories.Count,
+                    Like = c.Stories.Select(c => c.StoryInteraction.Like).Sum(),
+                    Read = c.Stories.Select(c => c.StoryInteraction.Read).Sum(),
+                    AuthorNewestStory = c.Stories.Where(c => c.AuthorId == authorId).OrderByDescending(c => c.StoryId)
+                    .Select(s => new StoryAuthorDto { StoryId = s.StoryId, StoryTitle = s.StoryTitle, StoryImage = s.StoryImage, StoryDescription = s.StoryDescription, CreateTime = s.CreateTime })
+                    .FirstOrDefault()
+                })
+                .FirstOrDefaultAsync();
         }
     }
 }

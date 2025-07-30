@@ -20,6 +20,8 @@ namespace EP.Infrastructure
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IShelvesRepository, ShelvesRepository>();
             services.AddScoped<IStoryRepository, StoryRepository>();
+            services.AddScoped<IAuthorRepository, AuthorRepository>();
+            services.AddScoped<IVolumeRepository, VolumeRepository>();
 
             services.AddScoped<IFileStorageService, FileStorageService>();
             services.AddScoped<IHashService, HashService>();

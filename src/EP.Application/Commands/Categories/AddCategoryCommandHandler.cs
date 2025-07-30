@@ -1,24 +1,30 @@
 ﻿using EP.Application.Common.Interfaces;
 using EP.Domain.Models;
 using MediatR;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace EP.Application.Commands.Categories
 {
-    public record AddCategoryCommand : IRequest<bool>
+    public record AddCategoryCommand : IRequest<int>
     {
         public string? CategoryName { get; set; }
         public string? CategoryBanner { get; set; }
         public string? CategoryDescription { get; set; }
     }
-    public class AddCategoryCommandHandler : IRequestHandler<AddCategoryCommand, bool>
+    public class AddCategoryCommandHandler : IRequestHandler<AddCategoryCommand, int>
     {
         private readonly IUnitOfWork _unitOfWork;
         public AddCategoryCommandHandler(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
         }
-        public async Task<bool> Handle(AddCategoryCommand request, CancellationToken cancellationToken)
+        public async Task<int> Handle(AddCategoryCommand request, CancellationToken cancellationToken)
         {
+            if (string.IsNullOrEmpty(request.CategoryName))
+            {
+                throw new ArgumentException("Tên thể loại không được để trống!", nameof(request.CategoryName));
+            }
+
             var category = new Category
             {
                 CategoryName = request.CategoryName,
@@ -27,9 +33,7 @@ namespace EP.Application.Commands.Categories
             };
 
             await _unitOfWork.CategoryRepository.AddAsync(category);
-            await _unitOfWork.CompleteAsync();
-
-            return true;
+            return await _unitOfWork.CompleteAsync();
         }
     }
 }

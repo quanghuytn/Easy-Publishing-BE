@@ -1,6 +1,9 @@
 ﻿using app.DTOs.Chapter;
 using app.Interface;
 using app.Service;
+using EP.Application.Commands.Volumes;
+using EP.Application.Queries.Volume;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -14,89 +17,55 @@ namespace app.Controllers
         private readonly IChapterRepository _chapterRepo;
         private MsgService _msgService = new MsgService();
         private int pagesize = 10;
-        public ChaptersController(IChapterRepository chapterRepo)
+        private readonly IMediator _mediator;
+        public ChaptersController(IChapterRepository chapterRepo, IMediator mediator)
         {
             _chapterRepo = chapterRepo;
+            _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
         }
 
         [HttpPost("add_volume")]
-        public async Task<ActionResult> AddVolume(AddVolumeDto volume)
+        public async Task<ActionResult> AddVolume(AddVolumeCommand command)
         {
-            if (string.IsNullOrEmpty(volume.VolumeTitle))
+            var affectedRows = await _mediator.Send(command);
+
+            if (affectedRows > 0)
             {
                 return new JsonResult(new
                 {
-                    EC = -1,
-                    EM = "Thêm tập thất bại!"
+                    EC = 0,
+                    EM = "Thêm tập mới thành công"
                 });
             }
-            try
-            {
-                var result = await _chapterRepo.AddVolume(volume);
-                if (result)
-                {
-                    return new JsonResult(new
-                    {
-                        EC = 0,
-                        EM = "Thêm tập mới thành công"
-                    });
-                }
-                else
-                {
-                    return new JsonResult(new
-                    {
-                        EC = -1,
-                        EM = "Tập gần nhất phải có ít nhất hai chương"
-                    });
-                }
-            }
-            catch (Exception)
+            else
             {
                 return new JsonResult(new
                 {
                     EC = -1,
-                    EM = "Hệ thống xảy ra lỗi!"
+                    EM = "Thêm tập mới thất bại!. Vui lòng thử lại sau."
                 });
             }
         }
 
         [HttpPut("update_volume")]
-        public async Task<ActionResult> UpdateVolume(VolumeDto volume)
+        public async Task<ActionResult> UpdateVolume(UpdateVolumeCommand command)
         {
-            if (string.IsNullOrEmpty(volume.VolumeTitle))
+            var affectedRows = await _mediator.Send(command);
+
+            if (affectedRows > 0)
             {
                 return new JsonResult(new
                 {
-                    EC = -1,
-                    EM = "Cập nhật thất bại!"
+                    EC = 0,
+                    EM = "Cập nhật tập thành công"
                 });
             }
-            try
-            {
-                var result = await _chapterRepo.UpdateVolume(volume);
-                if (result)
-                {
-                    return new JsonResult(new
-                    {
-                        EC = 0,
-                        EM = "Cập nhật thành công"
-                    });
-                }
-                else
-                {
-                    return new JsonResult(new
-                    {
-                        EC = -1,
-                        EM = "Tập không tồn tại"
-                    });
-                }
-            }
-            catch (Exception)
+            else
             {
                 return new JsonResult(new
                 {
                     EC = -1,
-                    EM = "Hệ thống xảy ra lỗi!"
+                    EM = "Cập nhật tập thất bại!. Vui lòng thử lại sau."
                 });
             }
         }
@@ -104,15 +73,19 @@ namespace app.Controllers
         [HttpGet("volume_list")]
         public async Task<ActionResult> GetVolumeName(int storyId)
         {
-            var volumes = await _chapterRepo.GetVolumesByStory(storyId);
-            return _msgService.MsgReturn(0, "Danh sách tập", volumes);
+            var query = new GetVolumeInStoryQuery { StoryId = storyId };
+            var result = await _mediator.Send(query);
+
+            return Ok(result);
         }
 
         [HttpGet("story_volume")]
         public async Task<ActionResult> GetVolume(int storyId)
         {
-            var volumes = await _chapterRepo.GetVolumes(storyId);
-            return _msgService.MsgReturn(0, "Danh sách tập cụ thể", volumes);
+            var query = new GetVolumesQuery(storyId);
+            var result = await _mediator.Send(query);
+
+            return Ok(result);
         }
 
         [HttpPost("add_chapter")]
@@ -270,7 +243,5 @@ namespace app.Controllers
             return _msgService.MsgReturn(0, "Nội dung chương", chapter);
 
         }
-
-        
     }
 }

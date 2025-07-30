@@ -1,5 +1,6 @@
 ﻿using app.Interface;
 using app.Service;
+using EP.Application.Queries.Author;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,28 +10,29 @@ namespace app.Controllers
     [ApiController]
     public class AuthorsController : ControllerBase
     {
-        private readonly IAuthorRepository _authorRepo;
-        private MsgService _msgService = new MsgService();
         private readonly IMediator _mediator;
 
-        public AuthorsController(IAuthorRepository authorRepository, IMediator mediator)
+        public AuthorsController(IMediator mediator)
         {
-            _authorRepo = authorRepository;
             _mediator = mediator;
         }
 
         [HttpGet("story_detail")]
         public async Task<ActionResult> GetStoryRelateAuthor(int storyId)
         {
-            var author = await _authorRepo.GetStoryRelateAuthor(storyId);
-            return _msgService.MsgReturn(0, "Tác giả liên quan", author);
+            var query = new GetStoryRelateAuthorQuery(storyId);
+            var response = await _mediator.Send(query);
+
+            return Ok(response);
         }
 
         [HttpGet("author_detail")]
         public async Task<ActionResult> GetAuthor(int authorId)
         {
-            var author = await _authorRepo.GetAuthorById(authorId);
-            return _msgService.MsgReturn(0, "Thông tin tác giả", author);
+            var query = new GetAuthorByIdQuery(authorId);
+            var response = await _mediator.Send(query);
+
+            return Ok(response);
         }
     }
 }

@@ -11,6 +11,9 @@ namespace EP.Application.Common.Interfaces
     {
         IUserRepository UserRepository { get; }
         ICategoryRepository CategoryRepository { get; }
+        IAuthorRepository AuthorRepository { get; }
+        IStoryRepository StoryRepository { get; }
+        IVolumeRepository VolumeRepository { get; }
         Task<int> CompleteAsync();
     }
 }

@@ -25,6 +25,7 @@ namespace app.Controllers
         {
             var query = new GetAllCategoryQuery { };
             var result = await _mediator.Send(query);
+
             return Ok(result);
         }
 
@@ -42,7 +43,7 @@ namespace app.Controllers
         {
             var command = new GetOptionFilterQuery { };
             var result = await _mediator.Send(command);
-            
+
             return Ok(result);
         }
 
@@ -57,16 +58,18 @@ namespace app.Controllers
                     EM = "Không tìm thấy thể loại!"
                 });
             }
-            if (command.CategoryName == "" || command.CategoryName == null)
+
+
+            var affectedRows = await _mediator.Send(command);
+            
+            if( affectedRows < 1)
             {
                 return new JsonResult(new
                 {
                     EC = -1,
-                    EM = "Tên thể loại không được để trống!"
+                    EM = "Cập nhật thể loại thất bại! Vui lòng thử lại sau"
                 });
             }
-
-            await _mediator.Send(command);
 
             return new JsonResult(new
             {
@@ -78,43 +81,23 @@ namespace app.Controllers
         [HttpPost("addCategory")]
         public async Task<ActionResult> addCategory(AddCategoryCommand command)
         {
-            if (command.CategoryName == "" || command.CategoryName == null )
-            {
-                return new JsonResult(new
-                {
-                    EC = -1,
-                    EM = "Tên thể loại không được để trống"
-                });
-            }
-            try
-            {
-                bool result = await _mediator.Send(command);
 
-                if (result)
-                {
-                    return new JsonResult(new
-                    {
-                        EC = 0,
-                        EM = "Thêm thể loại thành công"
-                    });
-                }
-                else
-                {
-                    return new JsonResult(new
-                    {
-                        EC = -1,
-                        EM = "Thể loại đã tồn tại"
-                    });
-                }
-            }
-            catch
+            int affectedRows = await _mediator.Send(command);
+
+            if (affectedRows < 1)
             {
                 return new JsonResult(new
                 {
                     EC = -1,
-                    EM = "Hệ thống xảy ra lỗi!"
+                    EM = "Thêm thể loại thất bại! Vui lòng thử lại sau"
                 });
             }
+
+            return new JsonResult(new
+            {
+                EC = 0,
+                EM = "Thêm thể loại thành công"
+            });
         }
 
         //[HttpGet("{id}")]

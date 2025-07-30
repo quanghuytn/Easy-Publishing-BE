@@ -8,6 +8,7 @@ namespace EP.Application.Common.Interfaces.Repositories
         Task<IEnumerable<T>> GetAllAsync();
         Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate);
         Task<IEnumerable<TResult>> SelectAsync<TResult>(Expression<Func<T, TResult>> selector);
+        Task<IEnumerable<TResult>> SelectWithConditionAsync<TResult>(Expression<Func<T, bool>> predicate, Expression<Func<T, TResult>> selector);
         Task AddAsync(T entity);
         Task UpdateAsync(T entity);
     }

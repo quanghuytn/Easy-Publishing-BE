@@ -40,6 +40,11 @@ namespace EP.Infrastructure.Repositories
             return await _dbSet.AsNoTracking().Select(selector).ToListAsync();
         }
 
+        public async Task<IEnumerable<TResult>> SelectWithConditionAsync<TResult>(Expression<Func<T, bool>> predicate, Expression<Func<T, TResult>> selector)
+        {
+            return await _dbSet.AsNoTracking().Where(predicate).Select(selector).ToListAsync();
+        }
+
         public async Task AddAsync(T entity)
         {
             await _dbSet.AddAsync(entity);

@@ -12,6 +12,9 @@ namespace EP.Infrastructure.UnitOfWorks
         private bool _disposed;
         private IUserRepository? _userRepository;
         private ICategoryRepository? _categoryRepository;
+        private IAuthorRepository? _authorRepository;
+        private IStoryRepository? _storyRepository;
+        private IVolumeRepository? _volumeRepository;
 
         public IUserRepository UserRepository
         {
@@ -22,6 +25,42 @@ namespace EP.Infrastructure.UnitOfWorks
                     _userRepository = new UserRepository(_context);
                 }
                 return _userRepository;
+            }
+        }
+
+        public IStoryRepository StoryRepository
+        {
+            get
+            {
+                if (_storyRepository == null)
+                {
+                    _storyRepository = new StoryRepository(_context);
+                }
+                return _storyRepository;
+            }
+        }
+
+        public IVolumeRepository VolumeRepository
+        {
+            get
+            {
+                if (_volumeRepository == null)
+                {
+                    _volumeRepository = new VolumeRepository(_context);
+                }
+                return _volumeRepository;
+            }
+        }
+
+        public IAuthorRepository AuthorRepository
+        {
+            get
+            {
+                if (_authorRepository == null)
+                {
+                    _authorRepository = new AuthorRepository(_context);
+                }
+                return _authorRepository;
             }
         }
 
