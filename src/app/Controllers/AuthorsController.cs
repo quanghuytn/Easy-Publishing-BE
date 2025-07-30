@@ -1,5 +1,6 @@
 ﻿using app.Interface;
 using app.Service;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
 namespace app.Controllers
@@ -10,9 +11,12 @@ namespace app.Controllers
     {
         private readonly IAuthorRepository _authorRepo;
         private MsgService _msgService = new MsgService();
-        public AuthorsController(IAuthorRepository authorRepository)
+        private readonly IMediator _mediator;
+
+        public AuthorsController(IAuthorRepository authorRepository, IMediator mediator)
         {
             _authorRepo = authorRepository;
+            _mediator = mediator;
         }
 
         [HttpGet("story_detail")]

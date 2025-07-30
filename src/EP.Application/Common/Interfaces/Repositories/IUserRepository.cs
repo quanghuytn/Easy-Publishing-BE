@@ -2,7 +2,7 @@
 using EP.Application.Common.DTOs.User;
 using EP.Domain.Models;
 
-namespace EP.Application.Common.Interfaces
+namespace EP.Application.Common.Interfaces.Repositories
 {
     public interface IUserRepository : IRepository<User>
     {

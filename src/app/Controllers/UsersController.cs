@@ -49,12 +49,12 @@ namespace app.Controllers
             return user;
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutUser(int userId, UserProfileForm user)
-        {
-            await _userRepo.updateUser(userId, user);
-            return NoContent();
-        }
+        //[HttpPut("{id}")]
+        //public async Task<IActionResult> PutUser(int userId, UserProfileForm user)
+        //{
+        //    await _userRepo.updateUser(userId, user);
+        //    return NoContent();
+        //}
 
         [HttpPost]
         public async Task<ActionResult<User>> PostUser(User user)

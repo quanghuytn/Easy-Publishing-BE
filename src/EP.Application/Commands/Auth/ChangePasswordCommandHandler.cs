@@ -1,0 +1,53 @@
+﻿using EP.Application.Common.Interfaces;
+using EP.Application.Common.Interfaces.Services;
+using MediatR;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+
+namespace EP.Application.Commands.Auth
+{
+    public record ChangePasswordCommand : IRequest<int>
+    {
+        public int UserId { get; set; }
+        public string OldPassword { get; set; }
+        public string Password { get; set; }
+        public string ConfirmPassword { get; set; }
+    }
+    public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordCommand, int>
+    {
+        private readonly IHashService _hashService;
+        private readonly IUnitOfWork _unitOfWork;
+        public ChangePasswordCommandHandler(IUnitOfWork unitOfWork, IHashService hashService)
+        {
+            _unitOfWork = unitOfWork;
+            _hashService = hashService;
+        }
+        public async Task<int> Handle(ChangePasswordCommand request, CancellationToken cancellationToken)
+        {
+            var user = await _unitOfWork.UserRepository.GetByIdAsync(request.UserId);
+
+            if (user == null) 
+            {
+                throw new Exception("Đổi mật khẩu thất bại. Xin vui lòng thử lại sau!");
+            }
+
+            if (!_hashService.Verify(user.Password, request.OldPassword))
+            {
+                throw new Exception("Mật khẩu không đúng");
+            }
+
+            if (!request.Password.Equals(request.ConfirmPassword))
+            {
+                throw new Exception("Xác nhận mật khẩu không khớp với mật khẩu đã nhập");
+            }
+
+            _unitOfWork.UserRepository.ResetPassword(request.UserId, _hashService.Hash(request.Password));
+            
+            return await _unitOfWork.CompleteAsync();
+        }
+    }
+}

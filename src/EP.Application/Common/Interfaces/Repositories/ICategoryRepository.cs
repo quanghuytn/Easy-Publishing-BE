@@ -1,9 +1,8 @@
 ﻿using EP.Application.Commands.Categories;
-using EP.Application.Commands.Categories;
 using EP.Application.Common.DTOs.Category;
 using EP.Domain.Models;
 
-namespace EP.Application.Common.Interfaces
+namespace EP.Application.Common.Interfaces.Repositories
 {
     public interface ICategoryRepository : IRepository<Category>
     {

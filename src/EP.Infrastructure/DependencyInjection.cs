@@ -1,4 +1,5 @@
 ﻿using EP.Application.Common.Interfaces;
+using EP.Application.Common.Interfaces.Repositories;
 using EP.Application.Common.Interfaces.Services;
 using EP.Infrastructure.Data;
 using EP.Infrastructure.Repositories;
@@ -23,6 +24,7 @@ namespace EP.Infrastructure
             services.AddScoped<IFileStorageService, FileStorageService>();
             services.AddScoped<IHashService, HashService>();
             services.AddScoped<ITokenService, TokenService>();
+            services.AddScoped<IMailService, MailService>();
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 

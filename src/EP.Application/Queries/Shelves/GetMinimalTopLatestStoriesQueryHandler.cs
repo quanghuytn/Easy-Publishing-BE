@@ -1,6 +1,6 @@
 ﻿using EP.Application.Common;
 using EP.Application.Common.DTOs.Shelves;
-using EP.Application.Common.Interfaces;
+using EP.Application.Common.Interfaces.Repositories;
 using EP.Application.Common.Pagination;
 using MediatR;
 using System;

@@ -1,4 +1,4 @@
-﻿using EP.Application.Common.Interfaces;
+﻿using EP.Application.Common.Interfaces.Repositories;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;

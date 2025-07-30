@@ -1,4 +1,5 @@
 ﻿using EP.Application.Common.Interfaces;
+using EP.Application.Common.Interfaces.Repositories;
 using EP.Infrastructure.Data;
 using EP.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;

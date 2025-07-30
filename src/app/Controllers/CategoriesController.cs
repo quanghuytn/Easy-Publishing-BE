@@ -13,7 +13,6 @@ namespace app.Controllers
     [ApiController]
     public class CategoriesController : ControllerBase
     {
-        private MsgService _msgService = new MsgService();
         private readonly IMediator _mediator;
 
         public CategoriesController(IMediator mediator)
@@ -42,14 +41,9 @@ namespace app.Controllers
         public async Task<ActionResult> GetOptionFilter()
         {
             var command = new GetOptionFilterQuery { };
-            var optionFilter = await _mediator.Send(command);
-            var status = new List<object>
-                {
-                    new { Name = "Hoàn thành", Value = 2 },
-                    new { Name = "Chưa hoàn thành", Value = 1 }
-                };
-
-            return _msgService.MsgReturn(0, "Trường tìm kiếm", new { categories = optionFilter.Categories, to = optionFilter.To, from = optionFilter.From, status });
+            var result = await _mediator.Send(command);
+            
+            return Ok(result);
         }
 
         [HttpPut("{id}")]

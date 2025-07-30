@@ -6,6 +6,5 @@ namespace app.Interface
     {
         Task<StoryRelateAuthorDto?> GetStoryRelateAuthor(int storyId);
         Task<AuthorDto?> GetAuthorById(int authorId);
-
     }
 }

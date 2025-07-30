@@ -1,12 +1,14 @@
-﻿using EP.Application.Common.DTOs.Category;
-using EP.Application.Common.Interfaces;
+﻿using EP.Application.Common;
+using EP.Application.Common.DTOs.Category;
+using EP.Application.Common.DTOs.Common;
+using EP.Application.Common.Interfaces.Repositories;
 using MediatR;
 
 namespace EP.Application.Queries.Category
 {
-    public record GetOptionFilterQuery : IRequest<OptionFilterDto>;
+    public record GetOptionFilterQuery : IRequest<ApiResponse<OptionFilterDto>>;
 
-    public class GetOptionFilterQueryHandler : IRequestHandler<GetOptionFilterQuery, OptionFilterDto>
+    public class GetOptionFilterQueryHandler : IRequestHandler<GetOptionFilterQuery, ApiResponse<OptionFilterDto>>
     {
         private readonly ICategoryRepository _categoryRepository;
         private readonly IStoryRepository _storyRepository;
@@ -15,7 +17,7 @@ namespace EP.Application.Queries.Category
             _categoryRepository = categoryRepository;
             _storyRepository = storyRepository;
         }
-        public async Task<OptionFilterDto> Handle(GetOptionFilterQuery request, CancellationToken cancellationToken)
+        public async Task<ApiResponse<OptionFilterDto>> Handle(GetOptionFilterQuery request, CancellationToken cancellationToken)
         {
             var categories = await _categoryRepository.SelectAsync(c => new CategoryDto
             {
@@ -32,12 +34,19 @@ namespace EP.Application.Queries.Category
                 to = prices.Max();
             }
 
-            return new OptionFilterDto
+            var status = new List<StatusDto>
+                {
+                    new("Hoàn thành", 2),
+                    new("Chưa hoàn thành", 1)
+                };
+
+            return ApiResponse<OptionFilterDto>.Success(new OptionFilterDto
             {
                 Categories = categories,
                 From = from,
-                To = to
-            };
+                To = to,
+                Status = status
+            }, "Trường tìm kiếm");
         }
     }
 }

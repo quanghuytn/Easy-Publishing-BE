@@ -154,27 +154,5 @@ namespace app.Repository
             }
             return fileUploaded;
         }
-
-        public async Task<User> updateUser(int userId, UserProfileForm data)
-        {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
-            user.UserFullname = data.UserFullname;
-            user.Address = data.Address;
-            user.Phone = data.Phone;
-            user.Dob = data.Dob;
-            if (data.Gender.ToLower().Equals("male"))
-            {
-                user.Gender = true;
-            }
-            else
-            {
-                user.Gender = false;
-            }
-            user.DescriptionMarkdown = data.DescriptionMarkdown;
-            user.DescriptionHtml = data.DescriptionHTML;
-            await _context.SaveChangesAsync();
-
-            return user;
-        }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using EP.Application.Common.DTOs.Auth;
 using EP.Application.Common.DTOs.User;
-using EP.Application.Common.Interfaces;
+using EP.Application.Common.Interfaces.Repositories;
 using EP.Domain.Models;
 using EP.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;

@@ -1,7 +1,7 @@
 ﻿using EP.Application.Common.DTOs.Author;
 using EP.Application.Common.DTOs.Interaction;
 using EP.Application.Common.DTOs.Shelves;
-using EP.Application.Common.Interfaces;
+using EP.Application.Common.Interfaces.Repositories;
 using EP.Application.Common.Pagination;
 using EP.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;

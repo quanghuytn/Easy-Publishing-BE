@@ -1,12 +1,6 @@
-﻿using EP.Application.Common.Interfaces;
+﻿using EP.Application.Common.Interfaces.Repositories;
 using EP.Application.Common.Interfaces.Services;
 using MediatR;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace EP.Application.Queries.Auth
 {
@@ -41,7 +35,7 @@ namespace EP.Application.Queries.Auth
                         "<p>Chúng tôi đã nhận được một yêu cầu đặt lại mật khẩu! </p> " +
                         "<p>Vui lòng bỏ qua mail này nếu bạn không phải người thực hiện.</p> " +
                         "<p>Nếu bạn là người thực hiện yêu cầu, vui lòng click vào đường dẫn dưới đây để đặt lại mật khẩu:</p> " +
-                        "<a href =\"https://genesis-easy-publishing.vercel.app//auth/reset-password?token=" + token + "\">Đặt lại mật khẩu</a>");
+                        "<a href =\"https://easy-publishing.vercel.app/auth/reset-password?token=" + token + "\">Đặt lại mật khẩu</a>");
             }
             catch (Exception ex)
             {

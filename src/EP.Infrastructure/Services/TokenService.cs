@@ -51,7 +51,7 @@ namespace EP.Infrastructure.Services
                 }),
                 Issuer = _jwtSettings.Issuer,
                 Audience = _jwtSettings.Audience,
-                Expires = DateTime.UtcNow.AddHours(24),
+                Expires = DateTime.UtcNow.AddMinutes(10),
                 SigningCredentials = new SigningCredentials(
                     new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key)),
                     SecurityAlgorithms.HmacSha256)
@@ -60,6 +60,33 @@ namespace EP.Infrastructure.Services
 
             string jwt = tokenHandler.WriteToken(token);
             return jwt;
+        }
+
+        public ClaimsPrincipal DecodeToken(string token)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = System.Text.Encoding.UTF8.GetBytes(_jwtSettings.Key);
+
+            var tokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = _jwtSettings.Issuer,
+                ValidAudience = _jwtSettings.Audience,
+                IssuerSigningKey = new SymmetricSecurityKey(key)
+            };
+
+            try
+            {
+                var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out var validatedToken);
+                return principal;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
         }
     }
 }

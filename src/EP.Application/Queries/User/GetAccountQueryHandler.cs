@@ -1,7 +1,7 @@
 ﻿using EP.Application.Common;
 using EP.Application.Common.DTOs.Auth;
 using EP.Application.Common.DTOs.Category;
-using EP.Application.Common.Interfaces;
+using EP.Application.Common.Interfaces.Repositories;
 using EP.Application.Queries.Category;
 using MediatR;
 

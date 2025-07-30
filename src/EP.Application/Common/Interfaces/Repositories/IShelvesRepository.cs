@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace EP.Application.Common.Interfaces
+namespace EP.Application.Common.Interfaces.Repositories
 {
     public interface IShelvesRepository
     {

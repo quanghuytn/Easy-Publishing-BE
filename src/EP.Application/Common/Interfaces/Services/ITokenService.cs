@@ -1,6 +1,7 @@
 ﻿using EP.Application.Common.DTOs.User;
 using EP.Domain.Models;
 using System;
+using System.Security.Claims;
 
 namespace EP.Application.Common.Interfaces.Services
 {
@@ -13,5 +14,6 @@ namespace EP.Application.Common.Interfaces.Services
         /// <returns>Generated JWT token as string</returns>
         string GenerateToken(UserDto user);
         string CreateForgotPasswordToken(string email);
+        public ClaimsPrincipal DecodeToken(string token);
     }
 }

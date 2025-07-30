@@ -1,5 +1,5 @@
 ﻿using EP.Application.Common.DTOs.Auth;
-using EP.Application.Common.Interfaces;
+using EP.Application.Common.Interfaces.Repositories;
 using EP.Application.Common.Interfaces.Services;
 using MediatR;
 
