@@ -5,7 +5,7 @@ using MediatR;
 
 namespace EP.Application.Queries.Volume
 {
-    public record GetVolumesQuery(int StoryId) : IRequest<ApiResponse<IEnumerable<VolumeChapterDto>>>;
+    public record GetVolumesQuery(int storyId) : IRequest<ApiResponse<IEnumerable<VolumeChapterDto>>>;
     public class GetVolumesQueryHandler : IRequestHandler<GetVolumesQuery, ApiResponse<IEnumerable<VolumeChapterDto>>>
     {
         private readonly IVolumeRepository _volumeRepository;
@@ -15,7 +15,7 @@ namespace EP.Application.Queries.Volume
         }
         public async Task<ApiResponse<IEnumerable<VolumeChapterDto>>> Handle(GetVolumesQuery request, CancellationToken cancellationToken)
         {
-            var volumes = await _volumeRepository.GetVolumes(request.StoryId);
+            var volumes = await _volumeRepository.GetVolumes(request.storyId);
 
             return ApiResponse<IEnumerable<VolumeChapterDto>>.Success(volumes, "Danh sách tập cụ thể");
         }

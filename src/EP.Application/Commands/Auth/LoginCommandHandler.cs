@@ -1,6 +1,7 @@
 ﻿using EP.Application.Common.DTOs.Auth;
 using EP.Application.Common.Interfaces.Repositories;
 using EP.Application.Common.Interfaces.Services;
+using FluentValidation;
 using MediatR;
 
 namespace EP.Application.Commands.Auth
@@ -11,6 +12,21 @@ namespace EP.Application.Commands.Auth
         public string Password { get; set; }
         public bool Remember { get; set; }
     }
+
+    public class LoginCommandValidator : AbstractValidator<LoginCommand>
+    {
+        public LoginCommandValidator()
+        {
+            RuleFor(command => command.EmailOrUsername)
+                .NotEmpty().WithMessage("Email or Username is required.")
+                .MaximumLength(100).WithMessage("Email or Username must not exceed 100 characters.");
+            RuleFor(command => command.Password)
+                .NotEmpty().WithMessage("Password is required.")
+                .MinimumLength(6).WithMessage("Password must be at least 6 characters long.")
+                .MaximumLength(100).WithMessage("Password must not exceed 100 characters.");
+        }
+    }
+
     public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
     {
         private readonly IUserRepository _userRepository;
@@ -24,10 +40,6 @@ namespace EP.Application.Commands.Auth
         }
         public async Task<LoginResponse> Handle(LoginCommand request, CancellationToken cancellationToken)
         {
-            if (string.IsNullOrEmpty(request.EmailOrUsername) || string.IsNullOrEmpty(request.Password))
-            {
-                throw new ArgumentException("Vui lòng nhập đủ thông tin yêu cầu!");
-            }
             var user = await _userRepository.GetUserByUsernameOrEmail(request.EmailOrUsername);
             if (user == null)
             {

@@ -1,5 +1,6 @@
 ﻿using EP.Application.Common.Interfaces;
 using EP.Domain.Models;
+using FluentValidation;
 using MediatR;
 using System;
 using System.Collections.Generic;
@@ -13,7 +14,19 @@ namespace EP.Application.Commands.Volumes
     {
         public int VolumeId { get; set; }
         public string VolumeTitle { get; set; } = null!;
-        public int VolumeNumber { get; set; }
+    }
+
+    public class UpdateVolumeCommandValidator : AbstractValidator<UpdateVolumeCommand>
+    {
+        public UpdateVolumeCommandValidator()
+        {
+            RuleFor(command => command.VolumeId)
+                .GreaterThan(0).WithMessage("VolumeId must be greater than 0.");
+
+            RuleFor(command => command.VolumeTitle)
+                .NotEmpty().WithMessage("VolumeTitle is required.")
+                .MaximumLength(200).WithMessage("VolumeTitle must not exceed 200 characters.");
+        }
     }
     public class UpdateVolumeCommandHandler : IRequestHandler<UpdateVolumeCommand, int>
     {
@@ -24,19 +37,14 @@ namespace EP.Application.Commands.Volumes
         }
         public async Task<int> Handle(UpdateVolumeCommand request, CancellationToken cancellationToken)
         {
-            if (string.IsNullOrEmpty(request.VolumeTitle))
-            {
-                throw new ArgumentException("Volume title cannot be null or empty.", nameof(request.VolumeTitle));
-            }
-
             var volume = await _unitOfWork.VolumeRepository.GetByIdAsync(request.VolumeId);
+
             if (volume == null)
             {
                 throw new KeyNotFoundException("Hệ thống xảy ra lỗi. Vui lòng thử lại sau!");
             }
 
             volume.VolumeTitle = request.VolumeTitle;
-            volume.VolumeNumber = request.VolumeNumber;
             await _unitOfWork.VolumeRepository.UpdateAsync(volume);
 
             return await _unitOfWork.CompleteAsync();

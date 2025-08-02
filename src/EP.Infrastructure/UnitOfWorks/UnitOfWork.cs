@@ -15,6 +15,7 @@ namespace EP.Infrastructure.UnitOfWorks
         private IAuthorRepository? _authorRepository;
         private IStoryRepository? _storyRepository;
         private IVolumeRepository? _volumeRepository;
+        private IChapterRepository? _chapterRepository;
 
         public IUserRepository UserRepository
         {
@@ -37,6 +38,18 @@ namespace EP.Infrastructure.UnitOfWorks
                     _storyRepository = new StoryRepository(_context);
                 }
                 return _storyRepository;
+            }
+        }
+
+        public IChapterRepository ChapterRepository
+        {
+            get
+            {
+                if (_chapterRepository == null)
+                {
+                    _chapterRepository = new ChapterRepository(_context);
+                }
+                return _chapterRepository;
             }
         }
 

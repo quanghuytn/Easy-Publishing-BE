@@ -14,6 +14,7 @@ namespace EP.Application.Common.Interfaces
         IAuthorRepository AuthorRepository { get; }
         IStoryRepository StoryRepository { get; }
         IVolumeRepository VolumeRepository { get; }
+        IChapterRepository ChapterRepository { get; }
         Task<int> CompleteAsync();
     }
 }

@@ -5,7 +5,7 @@ using MediatR;
 
 namespace EP.Application.Queries.Author
 {
-    public record GetStoryRelateAuthorQuery(int StoryId) : IRequest<ApiResponse<StoryRelateAuthorDto>>;
+    public record GetStoryRelateAuthorQuery(int storyId) : IRequest<ApiResponse<StoryRelateAuthorDto>>;
     public class GetStoryRelateAuthorQueryHandler : IRequestHandler<GetStoryRelateAuthorQuery, ApiResponse<StoryRelateAuthorDto>>
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -15,7 +15,7 @@ namespace EP.Application.Queries.Author
         }
         public async Task<ApiResponse<StoryRelateAuthorDto>> Handle(GetStoryRelateAuthorQuery request, CancellationToken cancellationToken)
         {
-            var story = await _unitOfWork.StoryRepository.GetByIdAsync(request.StoryId);
+            var story = await _unitOfWork.StoryRepository.GetByIdAsync(request.storyId);
             if (story == null)
             {
                 throw new ArgumentException("Hệ thống xảy ra lỗi. Vui lòng thử lại sau!");

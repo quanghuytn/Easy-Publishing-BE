@@ -1,5 +1,6 @@
 ﻿using EP.Application.Common.Interfaces;
 using EP.Application.Common.Interfaces.Services;
+using FluentValidation;
 using MediatR;
 using System;
 using System.Collections.Generic;
@@ -16,6 +17,29 @@ namespace EP.Application.Commands.Auth
         public string OldPassword { get; set; }
         public string Password { get; set; }
         public string ConfirmPassword { get; set; }
+    }
+
+    public class ChangePasswordCommandValidator : AbstractValidator<ChangePasswordCommand>
+    {
+        public ChangePasswordCommandValidator()
+        {
+            RuleFor(command => command.UserId)
+                .GreaterThan(0).WithMessage("User không hợp lệ.");
+
+            RuleFor(command => command.OldPassword)
+                .NotEmpty().WithMessage("OldPassword is required.")
+                .MinimumLength(6).WithMessage("OldPassword must be at least 6 characters long.")
+                .MaximumLength(100).WithMessage("OldPassword must not exceed 100 characters.");
+
+            RuleFor(command => command.Password)
+                .NotEmpty().WithMessage("Password is required.")
+                .MinimumLength(6).WithMessage("Password must be at least 6 characters long.")
+                .MaximumLength(100).WithMessage("Password must not exceed 100 characters.");
+
+            RuleFor(command => command.ConfirmPassword)
+                .NotEmpty().WithMessage("Confirm Password is required.")
+                .Equal(command => command.Password).WithMessage("Passwords must match.");
+        }
     }
     public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordCommand, int>
     {
@@ -38,11 +62,6 @@ namespace EP.Application.Commands.Auth
             if (!_hashService.Verify(user.Password, request.OldPassword))
             {
                 throw new Exception("Mật khẩu không đúng");
-            }
-
-            if (!request.Password.Equals(request.ConfirmPassword))
-            {
-                throw new Exception("Xác nhận mật khẩu không khớp với mật khẩu đã nhập");
             }
 
             _unitOfWork.UserRepository.ResetPassword(request.UserId, _hashService.Hash(request.Password));

@@ -1,5 +1,6 @@
 ﻿using EP.Application.Common.Interfaces;
 using EP.Domain.Models;
+using FluentValidation;
 using MediatR;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
@@ -11,6 +12,20 @@ namespace EP.Application.Commands.Categories
         public string? CategoryBanner { get; set; }
         public string? CategoryDescription { get; set; }
     }
+
+    public class AddCategoryCommandValidator : AbstractValidator<AddCategoryCommand>
+    {
+        public AddCategoryCommandValidator()
+        {
+            RuleFor(command => command.CategoryName)
+                .NotEmpty().WithMessage("CategoryName is required.")
+                .MaximumLength(100).WithMessage("CategoryName must not exceed 100 characters.");
+
+            RuleFor(command => command.CategoryDescription)
+                .MaximumLength(1000).WithMessage("CategoryDescription must not exceed 1000 characters.")
+                .When(command => command.CategoryDescription != null);
+        }
+    }
     public class AddCategoryCommandHandler : IRequestHandler<AddCategoryCommand, int>
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -20,11 +35,6 @@ namespace EP.Application.Commands.Categories
         }
         public async Task<int> Handle(AddCategoryCommand request, CancellationToken cancellationToken)
         {
-            if (string.IsNullOrEmpty(request.CategoryName))
-            {
-                throw new ArgumentException("Tên thể loại không được để trống!", nameof(request.CategoryName));
-            }
-
             var category = new Category
             {
                 CategoryName = request.CategoryName,

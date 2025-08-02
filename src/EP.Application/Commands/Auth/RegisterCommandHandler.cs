@@ -1,5 +1,6 @@
 ﻿using EP.Application.Common.Interfaces;
 using EP.Application.Common.Interfaces.Services;
+using FluentValidation;
 using MediatR;
 
 namespace EP.Application.Commands.Auth
@@ -10,6 +11,29 @@ namespace EP.Application.Commands.Auth
         public string? Username { get; set; }
         public string? Password { get; set; }
         public string? ConfirmPassword { get; set; }
+    }
+
+    public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
+    {
+        public RegisterCommandValidator()
+        {
+            RuleFor(command => command.Email)
+                .NotEmpty().WithMessage("Email is required.")
+                .EmailAddress().WithMessage("Invalid email format.");
+
+            RuleFor(command => command.Username)
+                .NotEmpty().WithMessage("Username is required.")
+                .MaximumLength(50).WithMessage("Username must not exceed 50 characters.");
+
+            RuleFor(command => command.Password)
+                .NotEmpty().WithMessage("Password is required.")
+                .MinimumLength(6).WithMessage("Password must be at least 6 characters long.")
+                .MaximumLength(100).WithMessage("Password must not exceed 100 characters.");
+
+            RuleFor(command => command.ConfirmPassword)
+                .NotEmpty().WithMessage("ConfirmPassword is required.")
+                .Equal(command => command.Password).WithMessage("Passwords must match.");
+        }
     }
     public class RegisterCommandHandler : IRequestHandler<RegisterCommand, int>
     {
@@ -22,11 +46,6 @@ namespace EP.Application.Commands.Auth
         }
         public async Task<int> Handle(RegisterCommand request, CancellationToken cancellationToken)
         {
-            if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password) || string.IsNullOrEmpty(request.Username))
-            {
-                throw new ArgumentException("Vui lòng nhập đủ thông tin yêu cầu!");
-            }
-
             var user = await _unitOfWork.UserRepository.GetUserByUsernameOrEmail(request.Email);
             if (user != null)
             {

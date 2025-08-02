@@ -1,5 +1,6 @@
 ﻿using EP.Application.Common.Interfaces;
 using EP.Application.Common.Interfaces.Services;
+using FluentValidation;
 using MediatR;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -12,6 +13,21 @@ namespace EP.Application.Commands.Auth
         public string Token { get; set; }
         public string Password { get; set; }
         public string ConfirmPassword { get; set; }
+    }
+
+    public class ResetPasswordCommandValidator : AbstractValidator<ResetPasswordCommand>
+    {
+        public ResetPasswordCommandValidator()
+        {
+            RuleFor(command => command.Password)
+                .NotEmpty().WithMessage("Password is required.")
+                .MinimumLength(6).WithMessage("Password must be at least 6 characters long.")
+                .MaximumLength(100).WithMessage("Password must not exceed 100 characters.");
+
+            RuleFor(command => command.ConfirmPassword)
+                .NotEmpty().WithMessage("Confir mPassword is required.")
+                .Equal(command => command.Password).WithMessage("Passwords must match.");
+        }
     }
     public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand, (int result, string email)>
     {
@@ -45,11 +61,6 @@ namespace EP.Application.Commands.Auth
             if (user == null)
             {
                 throw new ArgumentException("Email không tồn tại!");
-            }
-
-            if (!request.Password.Equals(request.ConfirmPassword))
-            {
-                throw new ArgumentException("Mật khẩu và xác nhận mật khẩu không khớp!");
             }
 
             try

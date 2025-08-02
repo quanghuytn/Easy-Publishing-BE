@@ -1,5 +1,6 @@
 ﻿using EP.Application.Common.Interfaces;
 using EP.Domain.Models;
+using FluentValidation;
 using MediatR;
 using System;
 using System.Collections.Generic;
@@ -14,6 +15,19 @@ namespace EP.Application.Commands.Volumes
         public int StoryId { get; init; }
         public string VolumeTitle { get; init; } = null!;
     }
+
+    public class AddVolumeCommandValidator : AbstractValidator<AddVolumeCommand>
+    {
+        public AddVolumeCommandValidator()
+        {
+            RuleFor(command => command.StoryId)
+                .GreaterThan(0).WithMessage("StoryId không hợp lệ.");
+
+            RuleFor(command => command.VolumeTitle)
+                .NotEmpty().WithMessage("Volume Title is required.")
+                .MaximumLength(200).WithMessage("Tiêu đề tập không được vượt quá 200 ký tự.");
+        }
+    }
     public class AddVolumeCommandHandler : IRequestHandler<AddVolumeCommand, int>
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -24,11 +38,6 @@ namespace EP.Application.Commands.Volumes
 
         public async Task<int> Handle(AddVolumeCommand request, CancellationToken cancellationToken)
         {
-            if (string.IsNullOrEmpty(request.VolumeTitle))
-            {
-                throw new ArgumentException("Volume title cannot be null or empty.", nameof(request.VolumeTitle));
-            }
-
             var latestVolumeNumber = await _unitOfWork.VolumeRepository.GetLatestVolumeNumber(request.StoryId);
 
             if (latestVolumeNumber >= 2)

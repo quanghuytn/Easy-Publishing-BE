@@ -577,7 +577,7 @@ namespace app.Controllers
             try
             {
                 int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
-                var story = _context.Stories.Include(s => s.Categories).FirstOrDefault(s => s.StoryId == data.storyId && s.AuthorId == userId);
+                var story = _context.Stories.Include(s => s.Categories).FirstOrDefault(s => s.StoryId == data.StoryId && s.AuthorId == userId);
                 if (story == null)
                 {
                     return new JsonResult(new

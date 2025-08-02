@@ -2,7 +2,7 @@
 {
     public class StoryImageDto
     {
-        public int storyId { get; set; }
+        public int StoryId { get; set; }
         public IFormFile image { get; set; }
     }
 }

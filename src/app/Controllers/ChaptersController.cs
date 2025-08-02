@@ -1,7 +1,9 @@
 ﻿using app.DTOs.Chapter;
 using app.Interface;
 using app.Service;
+using EP.Application.Commands.Chapters;
 using EP.Application.Commands.Volumes;
+using EP.Application.Queries.Chapter;
 using EP.Application.Queries.Volume;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -89,110 +91,45 @@ namespace app.Controllers
         }
 
         [HttpPost("add_chapter")]
-        public async Task<ActionResult> AddChapter(AddChapterDto chapter)
+        public async Task<ActionResult> AddChapter(AddChapterCommand command)
         {
-            if (string.IsNullOrEmpty(chapter.ChapterContentHtml) || string.IsNullOrEmpty(chapter.ChapterContentMarkdown))
-            {
-                return new JsonResult(new
-                {
-                    EC = -1,
-                    EM = "Không được để trống nội dung!"
-                });
-            }
-            try
-            {
-                await _chapterRepo.AddChapter(chapter);
-            }
-            catch (Exception)
-            {
-                return new JsonResult(new
-                {
-                    EC = -1,
-                    EM = "Hệ thống xảy ra lỗi!"
-                });
-            }
-            return new JsonResult(new
-            {
-                EC = 0,
-                EM = "Thêm chương mới thành công"
-            });
+            var result = await _mediator.Send(command);
+
+            return Ok(result);
         }
 
         [HttpGet("story_detail")]
         public async Task<ActionResult> GetStoryChapters(int storyId, int page, int pageSize)
         {
-            var chapters = await _chapterRepo.GetStoryChapters(storyId);
-            pageSize = pageSize == null || pageSize == 0 ? pagesize : pageSize;
-            return _msgService.MsgPagingReturn("Danh sách chương",
-                chapters.Skip(pageSize * (page - 1)).Take(pageSize), page, pageSize, chapters.Count);
+            var query = new GetStoryChapterQuery
+            {
+                StoryId = storyId,
+                PageIndex = page,
+                PageSize = pageSize
+            };
+            var result = await _mediator.Send(query);
+            
+            return Ok(result);
         }
 
-        [Authorize]
+        //[Authorize]
         [HttpGet("chapter_information")]
         public async Task<ActionResult> GetChapterInfor(int chapterId)
         {
-            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "101");
 
-            var chapter = await _chapterRepo.GetChapterInfor(chapterId);
-            if (chapter == null)
-            {
-                return new JsonResult(new
-                {
-                    EC = -1,
-                    EM = "Chương không tồn tại"
-                });
-            }
-            var checkResult = await _chapterRepo.CheckReadPermission(userId, chapter.StoryId, chapterId);
-            if (!checkResult)
-            {
-                return new JsonResult(new
-                {
-                    EC = -1,
-                    EM = "Bạn không được quyền vào trang này"
-                });
-            }
-            return _msgService.MsgReturn(0, "Thông tin chương", chapter);
+            var query = new GetChapterToEditQuery { ChapterId = chapterId, UserId = userId };
+            var result = await _mediator.Send(query);
+
+            return Ok(result);
         }
 
         [HttpPut("update_chapter")]
-        public async Task<ActionResult> EditChapter(UpdateChapterDto chapter)
+        public async Task<ActionResult> EditChapter(UpdateChapterCommand command)
         {
-            if (string.IsNullOrEmpty(chapter.ChapterContentHtml) || string.IsNullOrEmpty(chapter.ChapterContentMarkdown))
-            {
-                return new JsonResult(new
-                {
-                    EC = -1,
-                    EM = "Không được để trống nội dung chương!"
-                });
-            }
-            try
-            {
-                var result = await _chapterRepo.UpdateChapter(chapter);
-                if (result)
-                {
-                    return new JsonResult(new
-                    {
-                        EC = 0,
-                        EM = "Cập nhật thành công!"
-                    });
-                }
-                else
-                {
-                    return new JsonResult(new
-                    {
-                        EC = -1,
-                        EM = "Cập nhật thất bại!"
-                    });
-                }
-            }
-            catch (Exception)
-            {
-                return new JsonResult(new
-                {
-                    EC = -1,
-                    EM = "Hệ thống xảy ra lỗi!"
-                });
-            }
+            var result = await _mediator.Send(command);
+
+            return Ok(result);
         }
 
         [HttpPut("delete_chapter")]
