@@ -10,7 +10,7 @@ namespace EP.Application.Common
         public string EM { get; set; }
         public T DT { get; set; }
 
-        public static ApiResponse<T> Success(T data = default, string message = "Success")
+        public static ApiResponse<T> Success(string message = "Success", T data = default)
         {
             return new ApiResponse<T>
             {

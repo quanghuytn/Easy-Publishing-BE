@@ -1,8 +1,4 @@
-﻿using app.DTOs.Category;
-using app.Interface;
-using app.Models;
-using app.Service;
-using EP.Application.Commands.Categories;
+﻿using EP.Application.Commands.Categories;
 using EP.Application.Queries.Category;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;

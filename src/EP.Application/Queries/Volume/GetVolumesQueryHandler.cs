@@ -17,7 +17,7 @@ namespace EP.Application.Queries.Volume
         {
             var volumes = await _volumeRepository.GetVolumes(request.storyId);
 
-            return ApiResponse<IEnumerable<VolumeChapterDto>>.Success(volumes, "Danh sách tập cụ thể");
+            return ApiResponse<IEnumerable<VolumeChapterDto>>.Success("Danh sách tập cụ thể", volumes);
         }
     }
 }

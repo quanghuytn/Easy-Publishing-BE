@@ -24,7 +24,7 @@ namespace EP.Application.Queries.Category
             {
                 throw new KeyNotFoundException($"Thể loại không tồn tại!");
             }
-            return ApiResponse<CategoryDto>.Success(category, "Chi tiết thể loại");
+            return ApiResponse<CategoryDto>.Success("Chi tiết thể loại", category);
         }
     }
 }

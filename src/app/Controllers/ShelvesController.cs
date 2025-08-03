@@ -29,14 +29,14 @@ namespace app.Controllers
             _mediator = mediator;
         }
 
-        [HttpGet("top_famous")]
-        [EnableQuery]
-        public async Task<ActionResult> GetTopFamousStories(int page)
-        {
-            var stories = await _shelvesRepository.GetTopFamousStories();
-            return _msgService.MsgPagingReturn("Top nổi bật",
-                stories.Skip(pagesize * (page - 1)).Take(pagesize), page, pagesize, stories.Count);
-        }
+        //[HttpGet("top_famous")]
+        //[EnableQuery]
+        //public async Task<ActionResult> GetTopFamousStories(int page)
+        //{
+        //    var stories = await _shelvesRepository.GetTopFamousStories();
+        //    return _msgService.MsgPagingReturn("Top nổi bật",
+        //        stories.Skip(pagesize * (page - 1)).Take(pagesize), page, pagesize, stories.Count);
+        //}
 
         [HttpGet("minimal_top_famous")]
         [EnableQuery]
@@ -47,14 +47,14 @@ namespace app.Controllers
             return Ok(result);
         }
 
-        [HttpGet("top_latest_by_chapter")]
-        [EnableQuery]
-        public async Task<ActionResult> GetTopLatestStoriesByChapter(int page)
-        {
-            var stories = await _shelvesRepository.GetTopLatestStoriesByChapter();
-            return _msgService.MsgPagingReturn("Truyện mới update",
-                stories.Skip(pagesize * (page - 1)).Take(pagesize), page, pagesize, stories.Count);
-        }
+        //[HttpGet("top_latest_by_chapter")]
+        //[EnableQuery]
+        //public async Task<ActionResult> GetTopLatestStoriesByChapter(int page)
+        //{
+        //    var stories = await _shelvesRepository.GetTopLatestStoriesByChapter();
+        //    return _msgService.MsgPagingReturn("Truyện mới update",
+        //        stories.Skip(pagesize * (page - 1)).Take(pagesize), page, pagesize, stories.Count);
+        //}
 
         [HttpGet("minimal_top_latest_by_chapter")]
         public async Task<ActionResult> GetMinimalTopLatestStoriesByChapter(int page)
@@ -87,15 +87,15 @@ namespace app.Controllers
             return _msgService.MsgReturn(0, "Top 6 tác giả kiếm được nhiều tiền nhất", topAuthors);
         }
 
-        // GET: api/Stories : top read story
-        [HttpGet("top_read")]
-        [EnableQuery]
-        public async Task<ActionResult> GetTopStoriesRead(int page)
-        {
-            var stories = await _shelvesRepository.GetTopStoriesRead();
-            return _msgService.MsgPagingReturn("Top lượt đọc",
-                stories.Skip(pagesize * (page - 1)).Take(pagesize), page, pagesize, stories.Count);
-        }
+        //// GET: api/Stories : top read story
+        //[HttpGet("top_read")]
+        //[EnableQuery]
+        //public async Task<ActionResult> GetTopStoriesRead(int page)
+        //{
+        //    var stories = await _shelvesRepository.GetTopStoriesRead();
+        //    return _msgService.MsgPagingReturn("Top lượt đọc",
+        //        stories.Skip(pagesize * (page - 1)).Take(pagesize), page, pagesize, stories.Count);
+        //}
 
         [HttpGet("minimal_top_read")]
         public async Task<ActionResult> GetMinimalTopStoriesRead(int page)
@@ -116,14 +116,14 @@ namespace app.Controllers
         }
 
         // GET: api/Stories : top latest story
-        [HttpGet("top_newest")]
-        [EnableQuery]
-        public async Task<ActionResult> GetTopLatestStories(int page)
-        {
-            var stories = await _shelvesRepository.GetTopLatestStories();
-            return _msgService.MsgPagingReturn("Truyện mới thêm",
-               stories.Skip(pagesize * (page - 1)).Take(pagesize), page, pagesize, stories.Count);
-        }
+        //[HttpGet("top_newest")]
+        //[EnableQuery]
+        //public async Task<ActionResult> GetTopLatestStories(int page)
+        //{
+        //    var stories = await _shelvesRepository.GetTopLatestStories();
+        //    return _msgService.MsgPagingReturn("Truyện mới thêm",
+        //       stories.Skip(pagesize * (page - 1)).Take(pagesize), page, pagesize, stories.Count);
+        //}
 
         [HttpGet("minimal_top_newest")]
         public async Task<ActionResult> GetMinimalTopLatestStories(int page)
@@ -199,6 +199,7 @@ namespace app.Controllers
         {
             var query = new GetStoriesDoneEachCateQuery { CategoryId = cateId, PageIndex = page, PageSize = pageSize };
             var result = await _mediator.Send(query);
+
             return Ok(result);
         }
 

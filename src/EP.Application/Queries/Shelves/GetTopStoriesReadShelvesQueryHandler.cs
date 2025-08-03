@@ -25,7 +25,7 @@ namespace EP.Application.Queries.Shelves
         public async Task<ApiResponse<IEnumerable<TopStoryDto>>> Handle(GetTopStoriesReadShelvesQuery request, CancellationToken cancellationToken)
         {
             var data = await _shelvesRepository.GetTopStoriesReadShelves(request.CategoryId);
-            return ApiResponse<IEnumerable<TopStoryDto>>.Success(data, "Top lượt đọc theo thể loại");
+            return ApiResponse<IEnumerable<TopStoryDto>>.Success("Top lượt đọc theo thể loại", data);
         }
     }
 }

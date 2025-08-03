@@ -1,6 +1,7 @@
-﻿using app.DTOs.Report;
-using app.Interface;
-using app.Service;
+﻿using EP.Application.Commands.Reports;
+using EP.Application.Common.DTOs.Report;
+using EP.Application.Queries.Reports;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -11,77 +12,71 @@ namespace app.Controllers
     [ApiController]
     public class ReportsController : ControllerBase
     {
-        private readonly IReportRepository _reportRepo;
-        private MsgService _msgService = new MsgService();
-        public ReportsController(IReportRepository reportRepository)
+        private readonly IMediator _mediator;
+        public ReportsController(IMediator mediator)
         {
-            _reportRepo = reportRepository;
+            _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
         }
 
         [HttpGet("options")]
         public async Task<ActionResult> GetReportType()
         {
-            var types = await _reportRepo.GetReportTypes();
-            return _msgService.MsgReturn(0, "Các loại báo cáo", types);
+            var query = new GetReportTypesQuery();
+            var response = await _mediator.Send(query);
+
+            return Ok(response);
         }
 
+        [Authorize]
         [HttpGet("all_report")]
         public async Task<ActionResult> GetAllReports()
         {
-            var reports = await _reportRepo.GetAllReports();
-            return _msgService.MsgReturn(0, "Thể loại tố cáo", reports);
+            var query = new GetAllReportsQuery();
+            var response = await _mediator.Send(query);
+
+            return Ok(response);
         }
 
         [HttpGet("report/{id}")]
         public async Task<ActionResult> GetReport(int id)
         {
-            var report = await _reportRepo.GetReportById(id);
-            return _msgService.MsgReturn(0, "Get Report", report);
+            var query = new GetReportByIdQuery(id);
+            var response = await _mediator.Send(query);
+
+            return Ok(response);
         }
 
         [Authorize]
         [HttpPost("send")]
-        public async Task<ActionResult> SendReport(SendReportDTO newReport)
+        public async Task<ActionResult> SendReport(SendReportDto newReport)
         {
             int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
-            if (!ModelState.IsValid) return _msgService.MsgActionReturn(-1, "Thiếu điều kiện");
-            
-            try
+            var command = new SendReportCommand
             {
-                var result = await _reportRepo.SendReport(userId, newReport);
-                if (!result)
-                {
-                    return _msgService.MsgActionReturn(-1, "Đối tượng không tồn tại");
-                }
-            }
-            catch (Exception)
-            {
-                return _msgService.MsgActionReturn(-4, "Hệ thống xảy ra lỗi!");
-            }
-            return _msgService.MsgActionReturn(0, "Báo cáo thành công");
+                UserId = userId,
+                ReportTypeId = newReport.ReportTypeId,
+                StoryId = newReport.StoryId,
+                ChapterId = newReport.ChapterId,
+                CommentId = newReport.CommentId,
+                ReportContent = newReport.ReportContent
+            };
+            var response = await _mediator.Send(command);
+
+            return Ok(response);
         }
 
+        [Authorize]
         [HttpPut("resolveReport")]
         public async Task<ActionResult> SwitchStatus(int id)
         {
-            try
+            var command = new ResolveReportCommand
             {
-                string msg = await _reportRepo.ChangeReportStatus(id);
-                return new JsonResult(new
-                {
-                    EC = 0,
-                    EM = msg
-                });
-            }
-            catch (Exception)
-            {
-                return new JsonResult(new
-                {
-                    EC = -1,
-                    EM = "Hệ thống xảy ra lỗi!"
-                });
-            }
+                ReportId = id
+            };
+            var response = await _mediator.Send(command);
+
+            return Ok(response);
         }
     }
 }

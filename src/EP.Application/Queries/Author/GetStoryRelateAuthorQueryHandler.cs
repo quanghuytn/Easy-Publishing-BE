@@ -27,7 +27,7 @@ namespace EP.Application.Queries.Author
                 return ApiResponse<StoryRelateAuthorDto>.Failure("Tác giả không tồn tại");
             }
 
-            return ApiResponse<StoryRelateAuthorDto>.Success(author, "Thông tin tác giả liên quan");
+            return ApiResponse<StoryRelateAuthorDto>.Success("Thông tin tác giả liên quan", author);
         }
     }
 }

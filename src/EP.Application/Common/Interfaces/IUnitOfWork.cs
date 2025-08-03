@@ -15,6 +15,13 @@ namespace EP.Application.Common.Interfaces
         IStoryRepository StoryRepository { get; }
         IVolumeRepository VolumeRepository { get; }
         IChapterRepository ChapterRepository { get; }
+        IStoryInteractionRepository StoryInteractionRepository { get; }
+        IStoryReadRepository StoryReadRepository { get; }
+        ICommentRepository CommentRepository { get; }
+        IStoryFollowLikeRepository StoryFollowLikeRepository { get; }
+        IChapterLikedRepository ChapterLikedRepository { get; }
+        IReportRepository ReportRepository { get; }
+        IReviewRepository ReviewRepository { get; }
         Task<int> CompleteAsync();
     }
 }

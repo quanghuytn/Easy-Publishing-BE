@@ -8,5 +8,6 @@ namespace EP.Application.Common.Interfaces.Repositories
         Task<int> GetLatestVolumeNumber(int storyId);
         Task<bool> HasValidPreviousVolumeAsync(int storyId, int previousVolumeNumber);
         Task<IEnumerable<VolumeChapterDto>> GetVolumes(int storyId);
+        Task<IEnumerable<VolumeReviewDto>> GetVolumeReview(int storyId, int userId);
     }
 }

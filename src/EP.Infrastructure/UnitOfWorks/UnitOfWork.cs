@@ -16,6 +16,13 @@ namespace EP.Infrastructure.UnitOfWorks
         private IStoryRepository? _storyRepository;
         private IVolumeRepository? _volumeRepository;
         private IChapterRepository? _chapterRepository;
+        private IStoryReadRepository? _storyReadRepository;
+        private IStoryInteractionRepository? _storyInteractionRepository;
+        private ICommentRepository? _commentRepository;
+        private IStoryFollowLikeRepository? _storyFollowLikeRepository;
+        private IChapterLikedRepository? _chapterLikedRepository;
+        private IReportRepository? _reportRepository;
+        private IReviewRepository? _reviewRepository;
 
         public IUserRepository UserRepository
         {
@@ -86,6 +93,85 @@ namespace EP.Infrastructure.UnitOfWorks
                     _categoryRepository = new CategoryRepository(_context);
                 }
                 return _categoryRepository;
+            }
+        }
+
+        public IStoryReadRepository StoryReadRepository
+        {
+            get
+            {
+                if (_storyReadRepository == null)
+                {
+                    _storyReadRepository = new StoryReadRepository(_context);
+                }
+                return _storyReadRepository;
+            }
+        }
+
+        public IStoryInteractionRepository StoryInteractionRepository
+        {
+            get
+            {
+                if (_storyInteractionRepository == null)
+                {
+                    _storyInteractionRepository = new StoryInteractionRepository(_context);
+                }
+                return _storyInteractionRepository;
+            }
+        }
+        public ICommentRepository CommentRepository
+        {
+            get
+            {
+                if (_commentRepository == null)
+                {
+                    _commentRepository = new CommentRepository(_context);
+                }
+                return _commentRepository;
+            }
+        }
+        public IStoryFollowLikeRepository StoryFollowLikeRepository
+        {
+            get
+            {
+                if (_storyFollowLikeRepository == null)
+                {
+                    _storyFollowLikeRepository = new StoryFollowLikeRepository(_context);
+                }
+                return _storyFollowLikeRepository;
+            }
+        }
+        public IChapterLikedRepository ChapterLikedRepository
+        {
+            get
+            {
+                if (_chapterLikedRepository == null)
+                {
+                    _chapterLikedRepository = new ChapterLikedRepository(_context);
+                }
+                return _chapterLikedRepository;
+            }
+        }
+        public IReportRepository ReportRepository
+        {
+            get
+            {
+                if (_reportRepository == null)
+                {
+                    _reportRepository = new ReportRepository(_context);
+                }
+                return _reportRepository;
+            }
+        }
+        public IReviewRepository ReviewRepository
+        {
+            get
+            {
+                if (_reviewRepository == null)
+                {
+                    _reviewRepository = new ReviewRepository(_context);
+                }
+                return _reviewRepository;
             }
         }
 

@@ -13,5 +13,6 @@ namespace EP.Application.Common.Interfaces.Repositories
         //string? updateAvatar(int userId, AvatarForm data);
         Task<string> SwitchStatus(string email);
         //Task<List<UserDTO>> GetAllUsers();
+        public Task<bool> CheckPurchase(int? userId, long chapterNumber, int storyId);
     }
 }

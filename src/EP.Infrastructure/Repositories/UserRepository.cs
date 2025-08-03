@@ -4,11 +4,6 @@ using EP.Application.Common.Interfaces.Repositories;
 using EP.Domain.Models;
 using EP.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace EP.Infrastructure.Repositories
 {
@@ -20,6 +15,40 @@ namespace EP.Infrastructure.Repositories
         public Task AddNewUser(User user)
         {
             throw new NotImplementedException();
+        }
+
+        public async Task<bool> CheckPurchase(int? userId, long chapterNumber, int storyId)
+        {
+            // If userId is null, return false
+            if (userId == 0)
+            {
+                return false;
+            }
+            
+            var user = await _dbSet.Where(u => u.UserId == userId).Select(u => new
+            {
+                UserId = u.UserId,
+                RoleId = u.RoleId,
+                Stories = u.StoriesNavigation.Select(sn => new { StoryId = sn.StoryId }).ToList(),
+                Chapters = u.Chapters.Select(c => new { chapterId = c.ChapterId, ChapterNumber = c.ChapterNumber, StoryId = c.StoryId }).ToList()
+            }).FirstOrDefaultAsync();
+            // If the user does not exist, return false
+            if (user == null)
+            {
+                return false;
+            }
+            // Check if the user is an admin
+            if (user.RoleId == 1)
+            {
+                return true;
+            }
+            // Check if the user has purchased the chapter
+            if (user.Chapters.Any(c => c.ChapterNumber == chapterNumber && c.StoryId == storyId) || user.Stories.Any(s => s.StoryId == storyId))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         public async Task<AccountDto?> getAccountById(int id)

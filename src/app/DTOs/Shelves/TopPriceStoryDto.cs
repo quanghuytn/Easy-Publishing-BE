@@ -1,6 +1,4 @@
 ﻿using app.DTOs.Author;
-using app.DTOs.Category;
-using app.DTOs.Chapter;
 
 namespace app.DTOs.Shelves
 {

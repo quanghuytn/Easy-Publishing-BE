@@ -1,4 +1,5 @@
 ﻿using EP.Application.Common.Interfaces.Repositories;
+using EP.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -14,7 +15,7 @@ namespace EP.Infrastructure.Repositories
         protected readonly DbContext _context;
         protected readonly DbSet<T> _dbSet;
 
-        public Repository(DbContext context)
+        public Repository(Context context)
         {
             _context = context;
             _dbSet = context.Set<T>();
@@ -35,9 +36,14 @@ namespace EP.Infrastructure.Repositories
             return await _dbSet.AsNoTracking().ToListAsync();
         }
 
-        public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
+        public async Task<IEnumerable<T>> FindManyAsync(Expression<Func<T, bool>> predicate)
         {
             return await _dbSet.AsNoTracking().Where(predicate).ToListAsync();
+        }
+
+        public async Task<T?> FindAsync(Expression<Func<T, bool>> predicate)
+        {
+            return await _dbSet.FirstOrDefaultAsync(predicate);
         }
 
         public async Task<IEnumerable<TResult>> SelectAsync<TResult>(Expression<Func<T, TResult>> selector)
@@ -55,9 +61,20 @@ namespace EP.Infrastructure.Repositories
             await _dbSet.AddAsync(entity);
         }
 
+        public Task Remove(T entity)
+        {
+            _dbSet.Remove(entity);
+            return Task.CompletedTask;
+        }
+
         public Task UpdateAsync(T entity)
         {
             _dbSet.Update(entity);
+            return Task.CompletedTask;
+        }
+        public Task RemoveAsync(T entity)
+        {
+            _dbSet.Remove(entity);
             return Task.CompletedTask;
         }
     }

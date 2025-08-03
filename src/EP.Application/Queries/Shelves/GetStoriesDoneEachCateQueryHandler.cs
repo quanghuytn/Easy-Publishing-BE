@@ -27,7 +27,7 @@ namespace EP.Application.Queries.Shelves
         public async Task<ApiResponse<PaginatedResult<TopStoryDto>>> Handle(GetStoriesDoneEachCateQuery request, CancellationToken cancellationToken)
         {
             var data = await _shelvesRepository.GetStoriesDoneEachCate(request.CategoryId, request.PageIndex, request.PageSize);
-            return ApiResponse<PaginatedResult<TopStoryDto>>.Success(data, "Truyện hoàn thành theo thể loại");
+            return ApiResponse<PaginatedResult<TopStoryDto>>.Success("Truyện hoàn thành theo thể loại", data);
         }
     }
 }

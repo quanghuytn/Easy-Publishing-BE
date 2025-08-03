@@ -1,6 +1,7 @@
-﻿using app.DTOs.Comment;
-using app.Interface;
-using app.Service;
+﻿using EP.Application.Commands.Comments;
+using EP.Application.Common.DTOs.Comment;
+using EP.Application.Queries.Comments;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -12,88 +13,75 @@ namespace app.Controllers
     [ApiController]
     public class CommentsController : ControllerBase
     {
-        private MsgService _msgService = new MsgService();
-        private readonly ICommentRepository _commentRepo;
-        public CommentsController(ICommentRepository commentRepository)
+        private readonly IMediator _mediator;
+
+        public CommentsController(IMediator mediator)
         {
-            _commentRepo = commentRepository;
+            _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
         }
 
+        [Authorize]
         [HttpPost("send")]
         public async Task<ActionResult> SendComment(SendCommentDto newComment)
         {
             int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
-            if (!ModelState.IsValid) return _msgService.MsgActionReturn(-1, "Thiếu điều kiện");
-            try
+            var command = new AddCommentCommand
             {
-                await _commentRepo.AddComment(userId, newComment);
-            }
-            catch (Exception)
-            {
-                return new JsonResult(new
-                {
-                    EC = -1,
-                    EM = "Hệ thống xảy ra lỗi!"
-                });
-            }
-            return _msgService.MsgActionReturn(0, "Bình luận thành công");
+                StoryId = newComment.StoryId,
+                UserId = userId,
+                ChapterId = newComment.ChapterId,
+                CommentContent = newComment.CommentContent
+            };
+            var result = await _mediator.Send(command);
+
+            return Ok(result);
         }
 
+        [Authorize]
         [HttpPost("edit")]
         public async Task<ActionResult> EditComment(int commentId, [FromBody] CommentUpdateDto commentUpdate)
         {
             int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
-            try
+            var command = new EditCommentCommand
             {
-                var result = await _commentRepo.UpdateComment(userId, commentId, commentUpdate.CommentContent);
-                if (!result)
-                {
-                    return _msgService.MsgActionReturn(-1, "Comment không tồn tại");
-                }
-            }
-            catch (Exception)
+                CommentId = commentId,
+                UserId = userId,
+                CommentContent = commentUpdate.CommentContent
+            };
+            var result = await _mediator.Send(command);
+
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpDelete("{commentId}")]
+        public async Task<ActionResult> DeleteCommentByUser(int commentId)
+        {
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+            var command = new DeleteCommentByUserCommand
             {
-                return new JsonResult(new
-                {
-                    EC = -1,
-                    EM = "Hệ thống xảy ra lỗi!"
-                });
-            }
-            return _msgService.MsgActionReturn(0, "Bình luận thành công");
+                CommentId = commentId,
+                UserId = userId
+            };
+            var result = await _mediator.Send(command);
+
+            return Ok(result);
         }
 
         [Authorize(Roles ="Admin")]
         [HttpDelete("delete_comment")]
         public async Task<ActionResult> DeleteComment(int commentId)
         {
-            try
+            var command = new DeleteCommentByAdminCommand
             {
-                var result = await _commentRepo.DeleteComment(commentId); 
-                if (!result)
-                {
-                    return new JsonResult(new
-                    {
-                        EC = -1,
-                        EM = "Bình luận không tồn tại"
-                    });
-                }
-            }
-            catch (Exception)
-            {
-                return new JsonResult(new
-                {
-                    EC = -1,
-                    EM = "Hệ thống xảy ra lỗi!"
-                });
-            }
+                CommentId = commentId
+            };
+            var result = await _mediator.Send(command);
 
-            return new JsonResult(new
-            {
-                EC = 0,
-                EM = "Xóa bình luận thành công!"
-            });
+            return Ok(result);
         }
 
         [AllowAnonymous]
@@ -102,23 +90,29 @@ namespace app.Controllers
         {
             int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
 
-            var comments = await _commentRepo.GetStoryComments(userId, storyId);
-            pageSize = pageSize == null ? 10 : pageSize;
-            return _msgService.MsgPagingReturn("Bình luận của truyện",
-                comments.Skip(pageSize * (page - 1)).Take(pageSize), page, pageSize, comments.Count);
+            var query = new GetStoryCommentsQuery
+            {
+                UserId = userId,
+                StoryId = storyId,
+                PageIndex = page,
+                PageSize = pageSize
+            };
+            var result = await _mediator.Send(query);
+
+            return Ok(result);
         }
 
-        [AllowAnonymous]
-        [HttpGet("chapter_content")]
-        public async Task<ActionResult> GetChapterComments(int chapterId, int page, int pageSize)
-        {
-            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
+        //[AllowAnonymous]
+        //[HttpGet("chapter_content")]
+        //public async Task<ActionResult> GetChapterComments(int chapterId, int page, int pageSize)
+        //{
+        //    int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
 
-            var comments = await _commentRepo.GetChapterComments(userId, chapterId);
-            pageSize = pageSize == null ? 10 : pageSize;
-            return _msgService.MsgPagingReturn("Bình luận của chương",
-                comments.Skip(pageSize * (page - 1)).Take(pageSize), page, pageSize, comments.Count);
-        }
+        //    var comments = await _commentRepo.GetChapterComments(userId, chapterId);
+        //    pageSize = pageSize == null ? 10 : pageSize;
+        //    return _msgService.MsgPagingReturn("Bình luận của chương",
+        //        comments.Skip(pageSize * (page - 1)).Take(pageSize), page, pageSize, comments.Count);
+        //}
 
     }
 }

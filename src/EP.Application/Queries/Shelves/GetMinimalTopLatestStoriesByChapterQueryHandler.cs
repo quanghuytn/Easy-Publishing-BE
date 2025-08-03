@@ -26,7 +26,7 @@ namespace EP.Application.Queries.Shelves
         public async Task<ApiResponse<PaginatedResult<TopStoryDto>>> Handle(GetMinimalTopLatestStoriesByChapterQuery request, CancellationToken cancellationToken)
         {
             var data = await _shelvesRepository.GetMinimalTopLatestStoriesByChapter(request.PageIndex, request.PageSize);
-            return ApiResponse<PaginatedResult<TopStoryDto>>.Success(data, "Truyện mới update");
+            return ApiResponse<PaginatedResult<TopStoryDto>>.Success("Truyện mới update", data);
         }
     }
 }

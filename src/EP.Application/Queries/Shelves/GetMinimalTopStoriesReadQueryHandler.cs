@@ -28,7 +28,7 @@ namespace EP.Application.Queries.Shelves
         public async Task<ApiResponse<PaginatedResult<TopStoryDto>>> Handle(GetMinimalTopStoriesReadQuery request, CancellationToken cancellationToken)
         {
             var data = await _shelvesRepository.GetMinimalTopStoriesRead(request.PageIndex, request.PageSize);
-            return ApiResponse<PaginatedResult<TopStoryDto>>.Success(data, "Top lượt đọc");
+            return ApiResponse<PaginatedResult<TopStoryDto>>.Success("Top lượt đọc", data);
         }
     }
 }

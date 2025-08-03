@@ -40,13 +40,14 @@ namespace EP.Application.Queries.Category
                     new("Chưa hoàn thành", 1)
                 };
 
-            return ApiResponse<OptionFilterDto>.Success(new OptionFilterDto
-            {
-                Categories = categories,
-                From = from,
-                To = to,
-                Status = status
-            }, "Trường tìm kiếm");
+            return ApiResponse<OptionFilterDto>.Success("Trường tìm kiếm", 
+                new OptionFilterDto
+                    {
+                        Categories = categories,
+                        From = from,
+                        To = to,
+                        Status = status
+                    });
         }
     }
 }

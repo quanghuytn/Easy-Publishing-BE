@@ -26,7 +26,7 @@ namespace EP.Application.Queries.Volume
                                                                         VolumeNumber = v.VolumeNumber,
                                                                         VolumeTitle = v.VolumeTitle
                                                                     });
-            return ApiResponse<IEnumerable<VolumeDto>>.Success(volumes, "Danh sách tập");
+            return ApiResponse<IEnumerable<VolumeDto>>.Success("Danh sách tập", volumes);
         }
     }
 }

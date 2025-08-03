@@ -1,6 +1,4 @@
-﻿using app.Interface;
-using app.Service;
-using EP.Application.Queries.Author;
+﻿using EP.Application.Queries.Author;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 

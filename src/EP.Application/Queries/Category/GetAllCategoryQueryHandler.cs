@@ -16,7 +16,7 @@ namespace EP.Application.Queries.Category
         public async Task<ApiResponse<IEnumerable<CategoryDto>>> Handle(GetAllCategoryQuery request, CancellationToken cancellationToken)
         {
             var categoryList = await _categoryRepository.GetAllCategories();
-            return ApiResponse<IEnumerable<CategoryDto>>.Success(categoryList, "Các thể loại truyện");
+            return ApiResponse<IEnumerable<CategoryDto>>.Success("Các thể loại truyện", categoryList);
         }
     }
 }

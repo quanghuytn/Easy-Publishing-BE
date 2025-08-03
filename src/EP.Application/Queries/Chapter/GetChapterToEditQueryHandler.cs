@@ -33,7 +33,7 @@ namespace EP.Application.Queries.Chapter
                 throw new Exception("Bạn không được quyền vào trang này");
             }
 
-            return ApiResponse<ChapterDto>.Success(chapter, "Thông tin chương");
+            return ApiResponse<ChapterDto>.Success("Thông tin chương", chapter);
         }
     }
 }

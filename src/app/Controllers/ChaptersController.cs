@@ -1,7 +1,4 @@
-﻿using app.DTOs.Chapter;
-using app.Interface;
-using app.Service;
-using EP.Application.Commands.Chapters;
+﻿using EP.Application.Commands.Chapters;
 using EP.Application.Commands.Volumes;
 using EP.Application.Queries.Chapter;
 using EP.Application.Queries.Volume;
@@ -16,13 +13,9 @@ namespace app.Controllers
     [ApiController]
     public class ChaptersController : ControllerBase
     {
-        private readonly IChapterRepository _chapterRepo;
-        private MsgService _msgService = new MsgService();
-        private int pagesize = 10;
         private readonly IMediator _mediator;
-        public ChaptersController(IChapterRepository chapterRepo, IMediator mediator)
+        public ChaptersController(IMediator mediator)
         {
-            _chapterRepo = chapterRepo;
             _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
         }
 
@@ -90,6 +83,7 @@ namespace app.Controllers
             return Ok(result);
         }
 
+        [Authorize]
         [HttpPost("add_chapter")]
         public async Task<ActionResult> AddChapter(AddChapterCommand command)
         {
@@ -112,11 +106,11 @@ namespace app.Controllers
             return Ok(result);
         }
 
-        //[Authorize]
+        [Authorize]
         [HttpGet("chapter_information")]
         public async Task<ActionResult> GetChapterInfor(int chapterId)
         {
-            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "101");
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
             var query = new GetChapterToEditQuery { ChapterId = chapterId, UserId = userId };
             var result = await _mediator.Send(query);
@@ -124,6 +118,7 @@ namespace app.Controllers
             return Ok(result);
         }
 
+        [Authorize]
         [HttpPut("update_chapter")]
         public async Task<ActionResult> EditChapter(UpdateChapterCommand command)
         {
@@ -132,35 +127,20 @@ namespace app.Controllers
             return Ok(result);
         }
 
+        [Authorize]
         [HttpPut("delete_chapter")]
         public async Task<ActionResult> DeleteChapter(int chapterId)
         {
-            try
+            int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            var command = new DeleteChapterCommand
             {
-                var result = await _chapterRepo.DeleteChapter(chapterId);
-                if (!result)
-                {
-                    return new JsonResult(new
-                    {
-                        EC = -1,
-                        EM = "Chương không tồn tại"
-                    });
+                ChapterId = chapterId,
+                UserId = userId
+            };
 
-                }
-            }
-            catch (Exception)
-            {
-                return new JsonResult(new
-                {
-                    EC = -1,
-                    EM = "Hệ thống xảy ra lỗi!"
-                });
-            }
-            return new JsonResult(new
-            {
-                EC = 0,
-                EM = "Xóa chương thành công!"
-            });
+            var result = await _mediator.Send(command);
+
+            return Ok(result);
         }
 
         [HttpGet("chapter_content/{storyId}/{chapterNumber}")]
@@ -168,17 +148,15 @@ namespace app.Controllers
         {
             int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
 
-            var chapter = await _chapterRepo.GetChapterContent(userId, chapterNumber, storyId);
+            var query = new GetChapterContentQuery
+            {
+                ChapterNumber = chapterNumber,
+                StoryId = storyId,
+                UserId = userId
+            };
+            var result = await _mediator.Send(query);
 
-            if (chapter == null) {
-                return new JsonResult(new
-                {
-                    EC = -1,
-                    EM = "Chương không tồn tại"
-                });
-            }
-            return _msgService.MsgReturn(0, "Nội dung chương", chapter);
-
+            return Ok(result);
         }
     }
 }

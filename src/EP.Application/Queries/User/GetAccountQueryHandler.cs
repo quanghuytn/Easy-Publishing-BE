@@ -26,7 +26,7 @@ namespace EP.Application.Queries.User
             {
                 throw new ArgumentException("Tài khoản không tồn tại.");
             }
-            return ApiResponse<AccountDto>.Success(user, "Thông tin tài khoản");
+            return ApiResponse<AccountDto>.Success("Thông tin tài khoản", user);
         }
     }
 }

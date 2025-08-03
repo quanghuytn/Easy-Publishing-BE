@@ -23,7 +23,7 @@ namespace EP.Application.Queries.Chapter
         {
             var chapters = await _chapterRepository.GetStoryChapters(request.StoryId, request.PageIndex, request.PageSize);
 
-            return ApiResponse<PaginatedResult<MinimalChapterDto>>.Success(chapters, "Danh sách chương");
+            return ApiResponse<PaginatedResult<MinimalChapterDto>>.Success("Danh sách chương", chapters);
         }
     }
 }

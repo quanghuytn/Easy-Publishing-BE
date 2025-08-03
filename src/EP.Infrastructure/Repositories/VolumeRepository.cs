@@ -20,6 +20,35 @@ namespace EP.Infrastructure.Repositories
                         .MaxAsync(v => (int?)v.VolumeNumber) ?? 0;
         }
 
+        public async Task<IEnumerable<VolumeReviewDto>> GetVolumeReview(int storyId, int userId)
+        {
+            var volumes = await _dbSet
+               .AsNoTracking()
+               .Include(v => v.Chapters)
+               .Include(v => v.Story)
+               .Where(v => v.StoryId == storyId && v.Story.AuthorId != userId && v.Chapters.Any(c => c.Status == 0))
+               .Select(v => new VolumeReviewDto
+               {
+                   VolumeId = v.VolumeId,
+                   VolumeNumber = v.VolumeNumber,
+                   VolumeTitle = v.VolumeTitle,
+                   StoryId = v.StoryId,
+                   CreateTime = v.CreateTime,
+                   Chapters = v.Chapters.Where(c => c.Status == 0).Select(c => new ChapterVolumeReviewDto
+                   {
+                       ChapterId = c.ChapterId,
+                       Status = c.Status,
+                       ChapterNumber = c.ChapterNumber,
+                       ChapterTitle = c.ChapterTitle,
+                       ChapterPrice = c.ChapterPrice,
+                       CreateTime = c.CreateTime,
+                   }).OrderBy(c => c.ChapterNumber).ToList()
+               }).OrderBy(v => v.VolumeNumber)
+               .ToListAsync();
+
+            return volumes;
+        }
+
         public async Task<IEnumerable<VolumeChapterDto>> GetVolumes(int storyId)
         {
             return await _dbSet

@@ -26,7 +26,7 @@ namespace EP.Application.Queries.Author
                 return ApiResponse<AuthorDto>.Failure("Tác giả không tồn tại");
             }
 
-            return ApiResponse<AuthorDto>.Success(author, "Thông tin tác giả");
+            return ApiResponse<AuthorDto>.Success("Thông tin tác giả", author);
         }
     }
 }
