@@ -6,7 +6,6 @@ using app.Service.Caching;
 using EP.Application.Settings;
 using EP.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -153,7 +152,6 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(provider =>
 
 builder.Services.AddScoped<IRedisCacheService, RedisCacheService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IShelvesRepository, ShelvesRepository>();
 builder.Services.AddScoped<IHashService, HashService>();
 builder.Services.AddAuthorization();
 

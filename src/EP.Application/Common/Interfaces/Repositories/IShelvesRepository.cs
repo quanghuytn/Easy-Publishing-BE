@@ -1,4 +1,5 @@
-﻿using EP.Application.Common.DTOs.Shelves;
+﻿using EP.Application.Common.DTOs.Category;
+using EP.Application.Common.DTOs.Shelves;
 using EP.Application.Common.Pagination;
 
 namespace EP.Application.Common.Interfaces.Repositories
@@ -15,11 +16,21 @@ namespace EP.Application.Common.Interfaces.Repositories
         Task<PaginatedResult<TopStoryDto>> GetMinimalTopStoriesRead(int page, int pageSize);
         Task<PaginatedResult<TopStoryDto>> GetStoriesEachCate(int categoryId, int page, int pageSize);
         Task<PaginatedResult<TopStoryDto>> GetStoriesDoneEachCate(int categoryId, int page, int pageSize);
+        Task<PaginatedResult<TopStoryDto>> GetOwnedStory(int userId, int page, int pageSize);
+        Task<PaginatedResult<TopStoryDto>> GetFollowedStory(int userId, int page, int pageSize);
+        Task<PaginatedResult<TopStoryDto>> GetReadHistory(int userId, int page, int pageSize);
+        Task<PaginatedResult<TopStoryDto>> FilterStory(string? title,int? to, int? from, string? sort, List<int> cates,
+                                                        int? status, int page, int pageSize);
+        Task<PaginatedResult<StoryOfAuthorDto>> GetStoryOfAuthor(int authorId, string? title, string? sort, int page, int pageSize);
         Task<IEnumerable<TopStoryDto>> GetTopStoriesReadShelves(int cateId);
+        Task<IEnumerable<TopStoryDto>> GetTopFamousStoryOfAuthor(int authorId);
+        Task<IEnumerable<TopStoryDto>> GetTopPurchaseStoryOfAuthor(int authorId);
+        Task<IEnumerable<TopStoryDto>> GetNewestStoryOfAuthor(int authorId);
+        Task<IEnumerable<TopStoryDto>> GetWrittenStoryOfAuthor(int authorId);
         Task<IEnumerable<TopStoryDto>> GetStoriesTopCate(int cateId);
-        //Task<List<Top6PurchaseDto>> GetTop6StoriesPurchase();
-        //Task<List<TopPriceStoryDto>> GetTopPriceStories();
-        //Task<List<TopSaleDto>> GetTop6StoriesSale();
-        //Task<List<TopAuthorRevenueDto>> GetTop6AuthorRevenue();
+        Task<IEnumerable<TopStoryDto>> GetTop6StoriesPurchase();
+        Task<IEnumerable<TopSaleDto>> GetTop6StoriesSale();
+        Task<IEnumerable<TopAuthorRevenueDto>> GetTop6AuthorRevenue();
+        Task<IEnumerable<CategoryWithStoryDto>> GetStoriesInCategoryShelf();
     }
 }

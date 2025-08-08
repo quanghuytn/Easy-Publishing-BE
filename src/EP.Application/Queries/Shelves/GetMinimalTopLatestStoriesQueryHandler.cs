@@ -3,11 +3,6 @@ using EP.Application.Common.DTOs.Shelves;
 using EP.Application.Common.Interfaces.Repositories;
 using EP.Application.Common.Pagination;
 using MediatR;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace EP.Application.Queries.Shelves
 {

@@ -1,4 +1,4 @@
-﻿namespace app.DTOs.Shelves
+﻿namespace EP.Application.Common.DTOs.Shelves
 {
     public class TopAuthorRevenueDto
     {
@@ -11,5 +11,4 @@
         public string? AuthorEmail { get; set; }
         public string? AuthorImage { get; set; }
     }
-
 }
