@@ -1,12 +1,7 @@
 ﻿using EP.Application.Common.Interfaces.Repositories;
 using EP.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace EP.Infrastructure.Repositories
 {
@@ -41,6 +36,11 @@ namespace EP.Infrastructure.Repositories
             return await _dbSet.AsNoTracking().Where(predicate).ToListAsync();
         }
 
+        public async Task<IEnumerable<T>> FindManyAsTrackingAsync(Expression<Func<T, bool>> predicate)
+        {
+            return await _dbSet.Where(predicate).ToListAsync();
+        }
+
         public async Task<T?> FindAsync(Expression<Func<T, bool>> predicate)
         {
             return await _dbSet.FirstOrDefaultAsync(predicate);
@@ -51,9 +51,14 @@ namespace EP.Infrastructure.Repositories
             return await _dbSet.AsNoTracking().Select(selector).ToListAsync();
         }
 
-        public async Task<IEnumerable<TResult>> SelectWithConditionAsync<TResult>(Expression<Func<T, bool>> predicate, Expression<Func<T, TResult>> selector)
+        public async Task<IEnumerable<TResult>> SelectWithConditionAsync<TResult>(Expression<Func<T, bool>> predicate, Expression<Func<T, TResult>> selector, bool asNoTracking = true)
         {
-            return await _dbSet.AsNoTracking().Where(predicate).Select(selector).ToListAsync();
+            if (asNoTracking)
+            {
+                return await _dbSet.AsNoTracking().Where(predicate).Select(selector).ToListAsync();
+            }
+
+            return await _dbSet.Where(predicate).Select(selector).ToListAsync();
         }
 
         public async Task AddAsync(T entity)
@@ -72,10 +77,31 @@ namespace EP.Infrastructure.Repositories
             _dbSet.Update(entity);
             return Task.CompletedTask;
         }
+
+        public void UpdateRange(IEnumerable<T> entities)
+        {
+            _dbSet.UpdateRange(entities);
+        }
+
         public Task RemoveAsync(T entity)
         {
             _dbSet.Remove(entity);
             return Task.CompletedTask;
+        }
+
+        public async Task<TResult> MaxAsync<TResult>(Expression<Func<T, TResult>> selector)
+        {
+            return await _dbSet.AsNoTracking().MaxAsync(selector);
+        }
+
+        public async Task<TResult> MinAsync<TResult>(Expression<Func<T, TResult>> selector)
+        {
+            return await _dbSet.AsNoTracking().MinAsync(selector);
+        }
+
+        public async Task<bool> CheckExist(Expression<Func<T, bool>> predicate)
+        {
+            return await _dbSet.AnyAsync(predicate);
         }
     }
 }

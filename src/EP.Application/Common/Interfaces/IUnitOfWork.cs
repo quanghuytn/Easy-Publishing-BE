@@ -22,6 +22,10 @@ namespace EP.Application.Common.Interfaces
         IChapterLikedRepository ChapterLikedRepository { get; }
         IReportRepository ReportRepository { get; }
         IReviewRepository ReviewRepository { get; }
+        ITicketRepository TicketRepository { get; }
+        IRefundRequestsRepository RefundRequestsRepository { get; }
+        IWalletRepository WalletRepository { get; }
+        ITransactionRepository TransactionRepository { get; }
         Task<int> CompleteAsync();
     }
 }

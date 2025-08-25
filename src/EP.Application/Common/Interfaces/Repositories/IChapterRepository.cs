@@ -1,4 +1,5 @@
 ﻿using EP.Application.Common.DTOs.Chapter;
+using EP.Application.Common.DTOs.Transaction;
 using EP.Application.Common.Pagination;
 using EP.Domain.Models;
 
@@ -14,6 +15,8 @@ namespace EP.Application.Common.Interfaces.Repositories
         Task<ChapterDto?> GetChapterInfor(int chapterId);
         Task<ChapterInformationReviewDto?> GetChapterInformationToReview(int chapterId);
         Task<ChapterContentDto?> GetChapterContent(int userId, long chapterNumber, int storyId, bool hasPurchased);
+        Task<GetInfoPurchaseChapterResponse?> GetInfoPurchaseChapter(int storyId);
+
 
     }
 }

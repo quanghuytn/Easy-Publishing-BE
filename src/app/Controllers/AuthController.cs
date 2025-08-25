@@ -1,6 +1,5 @@
-﻿using app.DTOs.Auth;
-using EP.Application.Commands.Auth;
-using EP.Application.Commands.User;
+﻿using EP.Application.Commands.Auth;
+using EP.Application.Commands.Users;
 using EP.Application.Common.DTOs.Auth;
 using EP.Application.Queries.Auth;
 using EP.Application.Queries.User;
@@ -104,14 +103,9 @@ namespace app.Controllers
         }
 
         [HttpPost("reset_password")]
-        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordForm data)
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordCommand command)
         {
-            var (result, email) = await _mediator.Send(new ResetPasswordCommand
-            {
-                Token = data.Token,
-                Password = data.Password,
-                ConfirmPassword = data.ConfirmPassword
-            });
+            var (result, email) = await _mediator.Send(command);
             if(result > 0)
             {
                 return new JsonResult(new
@@ -219,10 +213,11 @@ namespace app.Controllers
 
         [Authorize]
         [HttpPost("change_password")]
-        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordForm data)
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordCommand command)
         {
             int userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
-            var command = new ChangePasswordCommand { UserId = userId, OldPassword = data.OldPassword, Password = data.Password, ConfirmPassword = data.ConfirmPassword };
+            command.UserId = userId;
+
             var result = await _mediator.Send(command);
             if(result < 1)
             {

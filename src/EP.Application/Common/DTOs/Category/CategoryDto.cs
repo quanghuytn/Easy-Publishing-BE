@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace EP.Application.Common.DTOs.Category;
+﻿namespace EP.Application.Common.DTOs.Category;
 
 public partial class CategoryDto
 {

@@ -61,7 +61,7 @@
     async function loadData() {
         $('.loader-container').show();
         $('#basic-datatables').DataTable().destroy();
-        fetch('http://localhost:5188/api/v1/story/get_all_stories')
+        fetch('http://localhost:5188/api/v1/story/all_stories')
             .then(response => response.json())
             .then(data => {
                 $('.loader-container').hide();

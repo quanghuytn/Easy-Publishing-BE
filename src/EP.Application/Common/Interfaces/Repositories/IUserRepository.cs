@@ -7,12 +7,11 @@ namespace EP.Application.Common.Interfaces.Repositories
     public interface IUserRepository : IRepository<User>
     {
         Task<UserDto?> GetUserByUsernameOrEmail(string usernameOrEmail);
-        Task AddNewUser(User user);
         void ResetPassword(int userId, string newHashedPassword);
         Task<AccountDto?> getAccountById(int id);
         //string? updateAvatar(int userId, AvatarForm data);
-        Task<string> SwitchStatus(string email);
-        //Task<List<UserDTO>> GetAllUsers();
+        Task<List<UserDto2>> GetAllUsers();
+        Task<UserPurchaseInfoDto?> GetPurchaseInfoInStory(int userId, int storyId);
         public Task<bool> CheckPurchase(int? userId, long chapterNumber, int storyId);
     }
 }

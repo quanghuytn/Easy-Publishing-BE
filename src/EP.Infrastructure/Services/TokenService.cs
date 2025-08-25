@@ -1,7 +1,6 @@
 ﻿using EP.Application.Common.DTOs.User;
 using EP.Application.Common.Interfaces.Services;
 using EP.Application.Settings;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;   
 using System.IdentityModel.Tokens.Jwt;

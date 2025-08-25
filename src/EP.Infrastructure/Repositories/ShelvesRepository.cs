@@ -4,7 +4,6 @@ using EP.Application.Common.DTOs.Interaction;
 using EP.Application.Common.DTOs.Shelves;
 using EP.Application.Common.Interfaces.Repositories;
 using EP.Application.Common.Pagination;
-using EP.Domain.Models;
 using EP.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 

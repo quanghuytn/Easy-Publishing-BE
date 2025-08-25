@@ -20,11 +20,11 @@ public partial class Story
 
     public string? StoryDescriptionHtml { get; set; }
 
-    public DateTime CreateTime { get; set; }
+    public DateTime CreateTime { get; set; } = DateTime.Now;
 
     public DateTime? UpdateTime { get; set; }
 
-    public int? Status { get; set; }
+    public int? Status { get; set; } = 0;
 
     public virtual User Author { get; set; } = null!;
 

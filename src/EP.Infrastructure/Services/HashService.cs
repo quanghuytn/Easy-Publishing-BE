@@ -1,10 +1,6 @@
 ﻿using EP.Application.Common.Interfaces.Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace EP.Infrastructure.Services
 {
@@ -25,6 +21,18 @@ namespace EP.Infrastructure.Services
             byte[] salt = RandomNumberGenerator.GetBytes(SaltSize);
             byte[] hash = Rfc2898DeriveBytes.Pbkdf2(password, salt, Iterations, HashAlgorithmName.SHA256, KeySize);
             return string.Join(Delimiter, Convert.ToBase64String(salt), Convert.ToBase64String(hash));
+        }
+
+        /// <summary>
+        /// Computes an HMAC-SHA512 hash of the input data using the provided key.
+        /// </summary>
+        public string HmacSHA512(string key, string inputData)
+        {
+            byte[] keyBytes = Encoding.UTF8.GetBytes(key);
+            byte[] inputBytes = Encoding.UTF8.GetBytes(inputData);
+            using var hmac = new HMACSHA512(keyBytes);
+            byte[] hashValue = hmac.ComputeHash(inputBytes);
+            return Convert.ToHexString(hashValue).ToLowerInvariant();
         }
 
         /// <summary>
@@ -52,6 +60,18 @@ namespace EP.Infrastructure.Services
 
             byte[] hashInput = Rfc2898DeriveBytes.Pbkdf2(passwordInput, salt, Iterations, HashAlgorithmName.SHA256, KeySize);
             return CryptographicOperations.FixedTimeEquals(hash, hashInput);
+        }
+
+        /// <summary>
+        /// Computes an HMAC-SHA256 hash of the input data using the provided key.
+        /// </summary>
+        public string HmacSHA256(string inputData, string key)
+        {
+            byte[] keyBytes = Encoding.UTF8.GetBytes(key);
+            byte[] messageBytes = Encoding.UTF8.GetBytes(inputData);
+            using var hmacsha256 = new HMACSHA256(keyBytes);
+            byte[] hashMessage = hmacsha256.ComputeHash(messageBytes);
+            return Convert.ToHexString(hashMessage).ToLowerInvariant();
         }
     }
 }

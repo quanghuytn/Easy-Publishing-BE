@@ -1,11 +1,7 @@
 ﻿using EP.Application.Common.Interfaces.Repositories;
 using EP.Domain.Models;
 using EP.Infrastructure.Data;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace EP.Infrastructure.Repositories
 {
@@ -15,5 +11,11 @@ namespace EP.Infrastructure.Repositories
         {
         }
 
+        public async Task IncrementViewCountAsync(int storyId)
+        {
+            await _dbSet
+                .Where(si => si.StoryId == storyId)
+                .ExecuteUpdateAsync(s => s.SetProperty(si => si.View, si => si.View + 1));
+        }
     }
 }

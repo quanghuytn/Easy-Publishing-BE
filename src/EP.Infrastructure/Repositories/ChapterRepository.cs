@@ -1,7 +1,7 @@
 ﻿using EP.Application.Common.DTOs.Author;
 using EP.Application.Common.DTOs.Chapter;
-using EP.Application.Common.DTOs.Shelves;
 using EP.Application.Common.DTOs.Story;
+using EP.Application.Common.DTOs.Transaction;
 using EP.Application.Common.Interfaces.Repositories;
 using EP.Application.Common.Pagination;
 using EP.Domain.Models;
@@ -236,6 +236,26 @@ namespace EP.Infrastructure.Repositories
                 }).FirstOrDefaultAsync();
 
             return chapter;
+        }
+
+        public async Task<GetInfoPurchaseChapterResponse?> GetInfoPurchaseChapter(int storyId)
+        {
+            var chapters = await _dbSet
+                    .Where(ch => ch.StoryId == storyId)
+                    .OrderBy(ch => ch.ChapterNumber)
+                    .Select(ch => new
+                    {
+                        ChapterId = ch.ChapterId,
+                        ChapterNumber = ch.ChapterNumber,
+                        StoryId = ch.StoryId
+                    })
+                    .ToListAsync();
+
+            return new GetInfoPurchaseChapterResponse
+            {
+                Chapter_story_max = chapters.Max(c => c.ChapterNumber),
+                User_chapter = chapters.Count()
+            };
         }
     }
 }

@@ -2,9 +2,7 @@
 using EP.Application.Common.Interfaces.Services;
 using FluentValidation;
 using MediatR;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace EP.Application.Commands.Auth
 {

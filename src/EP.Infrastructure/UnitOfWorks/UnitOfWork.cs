@@ -2,7 +2,6 @@
 using EP.Application.Common.Interfaces.Repositories;
 using EP.Infrastructure.Data;
 using EP.Infrastructure.Repositories;
-using Microsoft.EntityFrameworkCore;
 
 namespace EP.Infrastructure.UnitOfWorks
 {
@@ -10,6 +9,7 @@ namespace EP.Infrastructure.UnitOfWorks
     {
         private readonly Context _context = context ?? throw new ArgumentNullException(nameof(context));
         private bool _disposed;
+
         private IUserRepository? _userRepository;
         private ICategoryRepository? _categoryRepository;
         private IAuthorRepository? _authorRepository;
@@ -23,6 +23,10 @@ namespace EP.Infrastructure.UnitOfWorks
         private IChapterLikedRepository? _chapterLikedRepository;
         private IReportRepository? _reportRepository;
         private IReviewRepository? _reviewRepository;
+        private ITicketRepository? _ticketRepository;
+        private IRefundRequestsRepository? _refundRequestsRepository;
+        private IWalletRepository? _walletRepository;
+        private ITransactionRepository? _transactionRepository;
 
         public IUserRepository UserRepository
         {
@@ -172,6 +176,50 @@ namespace EP.Infrastructure.UnitOfWorks
                     _reviewRepository = new ReviewRepository(_context);
                 }
                 return _reviewRepository;
+            }
+        }
+        public ITicketRepository TicketRepository
+        {
+            get
+            {
+                if (_ticketRepository == null)
+                {
+                    _ticketRepository = new TicketRepository(_context);
+                }
+                return _ticketRepository;
+            }
+        }
+        public IRefundRequestsRepository RefundRequestsRepository
+        {
+            get
+            {
+                if (_refundRequestsRepository == null)
+                {
+                    _refundRequestsRepository = new RefundRequestsRepository(_context);
+                }
+                return _refundRequestsRepository;
+            }
+        }
+        public IWalletRepository WalletRepository
+        {
+            get
+            {
+                if (_walletRepository == null)
+                {
+                    _walletRepository = new WalletRepository(_context);
+                }
+                return _walletRepository;
+            }
+        }
+        public ITransactionRepository TransactionRepository
+        {
+            get
+            {
+                if (_transactionRepository == null)
+                {
+                    _transactionRepository = new TransactionRepository(_context);
+                }
+                return _transactionRepository;
             }
         }
 

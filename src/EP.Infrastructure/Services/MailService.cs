@@ -1,10 +1,8 @@
 ﻿using EP.Application.Common.Interfaces.Services;
 using EP.Application.Settings;
-using MediatR;
 using Microsoft.Extensions.Options;
 using System.Net;
 using System.Net.Mail;
-using System.Runtime.InteropServices.JavaScript;
 
 namespace EP.Infrastructure.Services
 {

@@ -1,10 +1,9 @@
-﻿using app.Interface;
-using app.Middleswares;
-using app.Repository;
-using app.Service;
-using app.Service.Caching;
+﻿using app.Middleswares;
+using EP.Application.Common.Interfaces.Services;
 using EP.Application.Settings;
+using EP.Domain.Settings;
 using EP.Infrastructure;
+using EP.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
@@ -22,11 +21,8 @@ ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
 builder.Services.AddHttpContextAccessor();
 // db
-builder.Services.AddDbContext<app.Models.EasyPublishingContext>
-    (option => option.UseSqlServer(builder.Configuration.GetConnectionString("MyCnn")));
 builder.Services.AddDbContext<EP.Infrastructure.Data.Context>
     (option => option.UseSqlServer(builder.Configuration.GetConnectionString("MyCnn")));
-builder.Services.AddScoped<app.Models.EasyPublishingContext>();
 builder.Services.AddScoped<EP.Infrastructure.Data.Context>();
 
 // Add services to the container.
@@ -150,13 +146,15 @@ builder.Services.AddStackExchangeRedisCache(options =>
 builder.Services.AddSingleton<IConnectionMultiplexer>(provider =>
     ConnectionMultiplexer.Connect(redisConfig));
 
-builder.Services.AddScoped<IRedisCacheService, RedisCacheService>();
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IHashService, HashService>();
+//builder.Services.AddScoped<IRedisCacheService, RedisCacheService>();
 builder.Services.AddAuthorization();
 
 builder.Services.Configure<JwtSetting>(builder.Configuration.GetSection("JWTConfig"));
 builder.Services.Configure<MailSetting>(builder.Configuration.GetSection("MailConfig"));
+builder.Services.Configure<VNPaySetting>(builder.Configuration.GetSection("VNPayConfig"));
+builder.Services.Configure<MomoPaySetting>(builder.Configuration.GetSection("MomoConfig"));
+
+builder.Services.AddHttpClient<IMomoService, MomoService>();
 
 builder.Services.AddInfrastructureService();
 

@@ -89,7 +89,7 @@
         }).done(data => {
             $('.loader-container').hide();
             $('#datatables').DataTable({
-                data: data.dt.tickets,
+                data: data.dt,
                 columnDefs: [{ width: '10%', targets: 0 }, { width: '17%', targets: 1 }],
                 columns: [
                     { data: 'ticketId' },

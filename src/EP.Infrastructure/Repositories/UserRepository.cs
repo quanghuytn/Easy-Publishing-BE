@@ -1,5 +1,6 @@
 ﻿using EP.Application.Common.DTOs.Auth;
 using EP.Application.Common.DTOs.User;
+using EP.Application.Common.DTOs.Wallet;
 using EP.Application.Common.Interfaces.Repositories;
 using EP.Domain.Models;
 using EP.Infrastructure.Data;
@@ -12,14 +13,9 @@ namespace EP.Infrastructure.Repositories
         public UserRepository(Context context) : base(context)
         {
         }
-        public Task AddNewUser(User user)
-        {
-            throw new NotImplementedException();
-        }
 
         public async Task<bool> CheckPurchase(int? userId, long chapterNumber, int storyId)
         {
-            // If userId is null, return false
             if (userId == 0)
             {
                 return false;
@@ -32,17 +28,17 @@ namespace EP.Infrastructure.Repositories
                 Stories = u.StoriesNavigation.Select(sn => new { StoryId = sn.StoryId }).ToList(),
                 Chapters = u.Chapters.Select(c => new { chapterId = c.ChapterId, ChapterNumber = c.ChapterNumber, StoryId = c.StoryId }).ToList()
             }).FirstOrDefaultAsync();
-            // If the user does not exist, return false
+
             if (user == null)
             {
                 return false;
             }
-            // Check if the user is an admin
+
             if (user.RoleId == 1)
             {
                 return true;
             }
-            // Check if the user has purchased the chapter
+
             if (user.Chapters.Any(c => c.ChapterNumber == chapterNumber && c.StoryId == storyId) || user.Stories.Any(s => s.StoryId == storyId))
             {
                 return true;
@@ -75,6 +71,47 @@ namespace EP.Infrastructure.Repositories
             return user;
         }
 
+        public async Task<List<UserDto2>> GetAllUsers()
+        {
+            return await _dbSet.Where(u => u.RoleId != 1)
+               .Select(u => new UserDto2
+               {
+                   Id = u.UserId,
+                   FullName = u.UserFullname,
+                   Email = u.Email,
+                   Phone = u.Phone,
+                   Username = u.Username,
+                   Password = u.Password,
+                   Dob = u.Dob.ToString(),
+                   UserImage = u.UserImage,
+                   Status = (u.Status == true ? "Active" : "Inactive"),
+                   Address = u.Address,
+               })
+               .OrderBy(s => s.Id)
+               .ToListAsync();
+        }
+
+        public async Task<UserPurchaseInfoDto?> GetPurchaseInfoInStory(int userId, int storyId)
+        {
+            return await _dbSet
+                .Where(u => u.UserId == userId)
+                .Select(u => new UserPurchaseInfoDto
+                {
+                    UserId = u.UserId,
+                    OwnedStoryIds = u.StoriesNavigation.Select(s => s.StoryId).ToList(),
+                    OwnedChapterIds = u.Chapters.Where(ch => ch.StoryId == storyId).Select(ch => ch.ChapterId).ToList(),
+                    Wallet = u.Wallets.Select(w =>
+                        new UserWalletDto
+                        {
+                            WalletId = w.WalletId,
+                            UserId = w.UserId,
+                            Fund = w.Fund,
+                            Refund = w.Refund
+                    }).FirstOrDefault()
+                })
+                .FirstOrDefaultAsync();
+        }
+
         public async Task<UserDto?> GetUserByUsernameOrEmail(string usernameOrEmail)
         {
             return await _dbSet
@@ -99,11 +136,6 @@ namespace EP.Infrastructure.Repositories
             {
                 user.Password = newHashedPassword;
             }
-        }
-
-        public Task<string> SwitchStatus(string email)
-        {
-            throw new NotImplementedException();
         }
     }
 }
