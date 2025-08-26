@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace EP.Application.Common.DTOs.Payment
+namespace EP.Domain.Payment
 {
     public class MomoIPNRequest
     {

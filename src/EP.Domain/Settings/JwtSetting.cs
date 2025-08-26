@@ -1,10 +1,12 @@
-﻿namespace EP.Application.Settings
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace EP.Domain.Settings
 {
     public class JwtSetting
     {
-        public string Key { get; set; }
-        public string Issuer { get; set; }
-        public string Audience { get; set; }
-        public string Time { get; set; }
+        public required string Key { get; set; }
+        public required string Issuer { get; set; }
+        public required string Audience { get; set; }
+        public required string Time { get; set; }
     }
 }

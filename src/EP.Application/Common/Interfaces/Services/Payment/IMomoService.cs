@@ -1,4 +1,4 @@
-﻿namespace EP.Application.Common.Interfaces.Services
+﻿namespace EP.Application.Common.Interfaces.Services.Payment
 {
     public interface IMomoService
     {

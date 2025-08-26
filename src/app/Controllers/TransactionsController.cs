@@ -1,6 +1,6 @@
 using EP.Application.Commands.Transactions;
-using EP.Application.Common.DTOs.Payment;
 using EP.Application.Queries.Transactions;
+using EP.Domain.Payment;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

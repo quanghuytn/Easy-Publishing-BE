@@ -1,14 +1,13 @@
-﻿using EP.Application.Common.DTOs.Payment;
-using EP.Application.Common.Interfaces.Services;
-using EP.Application.Settings;
+﻿using EP.Application.Common.Interfaces.Services.Common;
+using EP.Application.Common.Interfaces.Services.Payment;
+using EP.Domain.Payment;
 using EP.Domain.Settings;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using System.Net;
 using System.Text;
 
-namespace EP.Infrastructure.Services
+namespace EP.Infrastructure.Services.Payment
 {
     public class VNPayService : IVNPayService
     {

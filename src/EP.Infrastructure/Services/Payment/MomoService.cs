@@ -1,13 +1,12 @@
-﻿using Azure.Core;
-using EP.Application.Common.DTOs.Payment;
-using EP.Application.Common.Interfaces.Services;
+﻿using EP.Application.Common.Interfaces.Services.Common;
+using EP.Application.Common.Interfaces.Services.Payment;
+using EP.Domain.Payment;
 using EP.Domain.Settings;
 using Microsoft.Extensions.Options;
 using System.Text;
 using System.Text.Json;
-using System.Xml;
 
-namespace EP.Infrastructure.Services
+namespace EP.Infrastructure.Services.Payment
 {
     public class MomoService : IMomoService
     {

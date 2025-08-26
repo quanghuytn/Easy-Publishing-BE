@@ -1,4 +1,4 @@
-﻿namespace EP.Application.Common.Interfaces.Services
+﻿namespace EP.Application.Common.Interfaces.Services.Common
 {
     public interface IHashService
     {

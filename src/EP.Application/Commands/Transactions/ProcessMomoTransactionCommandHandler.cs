@@ -1,7 +1,7 @@
 ﻿using EP.Application.Common;
-using EP.Application.Common.DTOs.Payment;
 using EP.Application.Common.Interfaces;
 using EP.Domain.Models;
+using EP.Domain.Payment;
 using MediatR;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 

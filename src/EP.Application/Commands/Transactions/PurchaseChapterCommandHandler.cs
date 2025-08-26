@@ -5,7 +5,7 @@ using MediatR;
 
 namespace EP.Application.Commands.Transactions
 {
-    public record PurchaseChaperCommand(int ChapterId, int UserId) : IRequest<ApiResponse<string>>;
+    public record PurchaseChaperCommand(long ChapterId, int UserId) : IRequest<ApiResponse<string>>;
     public class PurchaseChapterCommandHandler : IRequestHandler<PurchaseChaperCommand, ApiResponse<string>>
     {
         private readonly IUnitOfWork _unitOfWork;

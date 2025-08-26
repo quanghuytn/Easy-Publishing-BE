@@ -1,4 +1,4 @@
-﻿namespace EP.Application.Settings
+﻿namespace EP.Domain.Settings
 {
     public class MailSetting
     {

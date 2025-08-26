@@ -1,4 +1,4 @@
-﻿namespace EP.Application.Common.DTOs.Payment
+﻿namespace EP.Domain.Payment
 {
     public class MomoCreateLinkResponse
     {

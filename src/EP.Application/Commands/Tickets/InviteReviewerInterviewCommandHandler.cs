@@ -1,6 +1,6 @@
 ﻿using EP.Application.Common;
 using EP.Application.Common.Interfaces;
-using EP.Application.Common.Interfaces.Services;
+using EP.Application.Common.Interfaces.Services.Common;
 using FluentValidation;
 using MediatR;
 

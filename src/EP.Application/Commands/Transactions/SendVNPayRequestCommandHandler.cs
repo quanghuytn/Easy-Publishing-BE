@@ -1,4 +1,4 @@
-﻿using EP.Application.Common.Interfaces.Services;
+﻿using EP.Application.Common.Interfaces.Services.Payment;
 using FluentValidation;
 using MediatR;
 

@@ -1,9 +1,13 @@
 ﻿using EP.Application;
 using EP.Application.Common.Interfaces;
 using EP.Application.Common.Interfaces.Repositories;
-using EP.Application.Common.Interfaces.Services;
+using EP.Application.Common.Interfaces.Services.Cache;
+using EP.Application.Common.Interfaces.Services.Common;
+using EP.Application.Common.Interfaces.Services.Payment;
 using EP.Infrastructure.Repositories;
-using EP.Infrastructure.Services;
+using EP.Infrastructure.Services.Caching;
+using EP.Infrastructure.Services.Common;
+using EP.Infrastructure.Services.Payment;
 using EP.Infrastructure.UnitOfWorks;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -36,7 +40,9 @@ namespace EP.Infrastructure
             services.AddScoped<IMomoService, MomoService>();
             services.AddScoped<IVNPayService, VNPayService>();
 
-            
+            services.AddScoped<IRedisCacheService, RedisCacheService>();
+
+
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             return services;

@@ -1,6 +1,6 @@
-﻿using EP.Application.Common.Interfaces.Services;
+﻿using EP.Application.Common.Interfaces.Services.Common;
 
-namespace EP.Infrastructure.Services
+namespace EP.Infrastructure.Services.Common
 {
     public class FileStorageService : IFileStorageService
     {
@@ -32,8 +32,8 @@ namespace EP.Infrastructure.Services
             if (!string.IsNullOrWhiteSpace(previousFilename))
             {
                 string oldFilePath = Path.Combine(path, previousFilename);
-                if (System.IO.File.Exists(oldFilePath))
-                    System.IO.File.Delete(oldFilePath);
+                if (File.Exists(oldFilePath))
+                    File.Delete(oldFilePath);
             }
 
             // Lưu ảnh mới

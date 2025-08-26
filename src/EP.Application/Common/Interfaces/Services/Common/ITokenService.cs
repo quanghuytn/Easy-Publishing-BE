@@ -3,7 +3,7 @@ using EP.Domain.Models;
 using System;
 using System.Security.Claims;
 
-namespace EP.Application.Common.Interfaces.Services
+namespace EP.Application.Common.Interfaces.Services.Common
 {
     public interface ITokenService
     {

@@ -1,9 +1,10 @@
-﻿using NRedisStack.RedisStackCommands;
+﻿using EP.Application.Common.Interfaces.Services.Cache;
+using NRedisStack.RedisStackCommands;
 using NRedisStack.Search;
 using StackExchange.Redis;
 using System.Text.Json;
 
-namespace app.Service.Caching
+namespace EP.Infrastructure.Services.Caching
 {
     public class RedisCacheService : IRedisCacheService
     {
@@ -33,7 +34,7 @@ namespace app.Service.Caching
             }
         }
 
-        public async Task<Object> JsonGetAsync(string key)
+        public async Task<object> JsonGetAsync(string key)
         {
             try
             {
@@ -48,9 +49,9 @@ namespace app.Service.Caching
         }
 
 
-        public async void StringSetAsync<T>(string key, T data, TimeSpan? expiration = null)
+        public async Task StringSetAsync<T>(string key, T data, TimeSpan? expiration = null)
         {
-            await _redisDb?.StringSetAsync(key, JsonSerializer.Serialize(data), expiration);
+            await _redisDb.StringSetAsync(key, JsonSerializer.Serialize(data), expiration);
         }
 
         //public async Task<List<StoryDTO>> SearchStoriesAsync(string query, int? authorId, int? fromPrice, int? toPrice, int? status, List<int> cates)
@@ -111,7 +112,7 @@ namespace app.Service.Caching
         //    return stories;
         //}
 
-        public async Task AddStoryAsync(int storyId, Object story)
+        public async Task AddStoryAsync(int storyId, object story)
         {
             await _redisDb.JSON().SetAsync($"story:{storyId}", "$", story);
         }

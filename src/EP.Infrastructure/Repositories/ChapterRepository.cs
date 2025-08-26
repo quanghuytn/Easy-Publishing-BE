@@ -18,9 +18,11 @@ namespace EP.Infrastructure.Repositories
 
         public async Task<long> GetLastestChapterNumberInVoumeAsync(int storyId, long volumeId)
         {
-            return await _dbSet
-                    .Where(c => c.StoryId == storyId && c.VolumeId == volumeId && c.Status >= 0)
+            var lastestChapterInVolume = await _dbSet
+                    .Where(c => c.StoryId == storyId && c.VolumeId <= volumeId && c.Status >= 0)
                     .MaxAsync(c => (long?)c.ChapterNumber) ?? 0;
+
+            return lastestChapterInVolume;
         }
 
         public async Task<PaginatedResult<MinimalChapterDto>> GetStoryChapters(int storyId, int page, int pageSize)
@@ -61,6 +63,17 @@ namespace EP.Infrastructure.Repositories
         /// <returns></returns>
         public async Task RenumberChaptersAfterAddAsync(int storyId, long startChapterNumber, bool isDelete = false)
         {
+            //var chapterCount = await _dbSet
+            //    .Where(c => c.StoryId == storyId && (c.Status >= 0 || c.Status == null))
+            //    .OrderBy(c => c.Volume.VolumeNumber)
+            //    .ThenBy(c => c.ChapterNumber)
+            //    .ToListAsync();
+            //var i = 1;
+            //foreach (var chapter in chapterCount)
+            //{
+            //    chapter.ChapterNumber = i;
+            //    i++;
+            //}
             var chapters = await _dbSet
                      .Where(c => c.StoryId == storyId && (c.Status >= 0 || c.Status == null) && c.ChapterNumber > startChapterNumber)
                      .OrderBy(c => c.Volume.VolumeNumber)

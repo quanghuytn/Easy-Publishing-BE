@@ -1,9 +1,8 @@
 ﻿using app.Middleswares;
-using EP.Application.Common.Interfaces.Services;
-using EP.Application.Settings;
+using EP.Application.Common.Interfaces.Services.Payment;
 using EP.Domain.Settings;
 using EP.Infrastructure;
-using EP.Infrastructure.Services;
+using EP.Infrastructure.Services.Payment;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
@@ -146,7 +145,6 @@ builder.Services.AddStackExchangeRedisCache(options =>
 builder.Services.AddSingleton<IConnectionMultiplexer>(provider =>
     ConnectionMultiplexer.Connect(redisConfig));
 
-//builder.Services.AddScoped<IRedisCacheService, RedisCacheService>();
 builder.Services.AddAuthorization();
 
 builder.Services.Configure<JwtSetting>(builder.Configuration.GetSection("JWTConfig"));

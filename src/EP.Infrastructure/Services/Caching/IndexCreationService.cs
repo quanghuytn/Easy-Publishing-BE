@@ -3,7 +3,7 @@ using NRedisStack.Search;
 using NRedisStack.Search.Literals.Enums;
 using StackExchange.Redis;
 
-namespace app.Service.Caching
+namespace EP.Infrastructure.Services.Caching
 {
     //public class IndexCreationService : IHostedService
     public class IndexCreationService

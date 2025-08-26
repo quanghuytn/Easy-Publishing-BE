@@ -1,10 +1,10 @@
-﻿using EP.Application.Common.Interfaces.Services;
-using EP.Application.Settings;
+﻿using EP.Application.Common.Interfaces.Services.Common;
+using EP.Domain.Settings;
 using Microsoft.Extensions.Options;
 using System.Net;
 using System.Net.Mail;
 
-namespace EP.Infrastructure.Services
+namespace EP.Infrastructure.Services.Common
 {
     public class MailService : IMailService
     {

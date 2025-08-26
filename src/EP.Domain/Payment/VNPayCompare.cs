@@ -1,10 +1,10 @@
 ﻿using System.Globalization;
 
-namespace EP.Application.Common.DTOs.Payment
+namespace EP.Domain.Payment
 {
     public class VNPayCompare : IComparer<string>
     {
-        public int Compare(string x, string y)
+        public int Compare(string? x, string? y)
         {
             if (x == y) return 0;
             if (x == null) return -1;

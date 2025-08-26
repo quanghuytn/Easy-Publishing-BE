@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace EP.Application.Common.Interfaces.Services
+namespace EP.Application.Common.Interfaces.Services.Common
 {
     public interface IMailService
     {

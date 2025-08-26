@@ -1,5 +1,5 @@
 ﻿using EP.Application.Common.Interfaces.Repositories;
-using EP.Application.Common.Interfaces.Services;
+using EP.Application.Common.Interfaces.Services.Common;
 using MediatR;
 
 namespace EP.Application.Queries.Auth

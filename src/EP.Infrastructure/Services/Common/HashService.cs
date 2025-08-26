@@ -1,8 +1,8 @@
-﻿using EP.Application.Common.Interfaces.Services;
+﻿using EP.Application.Common.Interfaces.Services.Common;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace EP.Infrastructure.Services
+namespace EP.Infrastructure.Services.Common
 {
     public class HashService : IHashService
     {

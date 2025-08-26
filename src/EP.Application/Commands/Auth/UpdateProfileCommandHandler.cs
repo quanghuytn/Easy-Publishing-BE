@@ -1,6 +1,6 @@
 ﻿using EP.Application.Common.DTOs.User;
 using EP.Application.Common.Interfaces;
-using EP.Application.Common.Interfaces.Services;
+using EP.Application.Common.Interfaces.Services.Common;
 using MediatR;
 using System;
 using System.Collections.Generic;

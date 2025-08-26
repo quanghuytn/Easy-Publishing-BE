@@ -1,13 +1,13 @@
 ﻿using EP.Application.Common.DTOs.User;
-using EP.Application.Common.Interfaces.Services;
-using EP.Application.Settings;
+using EP.Application.Common.Interfaces.Services.Common;
+using EP.Domain.Settings;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;   
+using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace EP.Infrastructure.Services
+namespace EP.Infrastructure.Services.Common
 {
     public class TokenService : ITokenService
     {
@@ -33,7 +33,7 @@ namespace EP.Infrastructure.Services
                 issuer: _jwtSettings.Issuer,
                 audience: _jwtSettings.Audience,
                 claims: claims,
-                expires: DateTime.UtcNow.AddDays(Int32.Parse(_jwtSettings.Time!)),
+                expires: DateTime.UtcNow.AddDays(int.Parse(_jwtSettings.Time!)),
                 signingCredentials: creds);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
@@ -64,7 +64,7 @@ namespace EP.Infrastructure.Services
         public ClaimsPrincipal DecodeToken(string token)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = System.Text.Encoding.UTF8.GetBytes(_jwtSettings.Key);
+            var key = Encoding.UTF8.GetBytes(_jwtSettings.Key);
 
             var tokenValidationParameters = new TokenValidationParameters
             {

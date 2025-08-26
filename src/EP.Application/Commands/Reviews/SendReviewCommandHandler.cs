@@ -1,7 +1,7 @@
 ﻿using EP.Application.Common;
 using EP.Application.Common.DTOs.Review;
 using EP.Application.Common.Interfaces;
-using EP.Application.Common.Interfaces.Services;
+using EP.Application.Common.Interfaces.Services.Common;
 using EP.Domain.Models;
 using MediatR;
 using System;
